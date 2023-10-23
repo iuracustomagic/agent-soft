@@ -7,14 +7,12 @@ import {
     View,
 } from 'react-native';
 import { IconBtn } from './IconBtn';
-import { LeftSideMenu } from './modals/LeftSideMenu';
+
 import NetworkIndicator from './NetworkIndicator';
 import { NavigationContainer, useNavigationContainerRef, useNavigation } from '@react-navigation/native';
 
-export default HeaderBar = ({lsMenuSetVisible, navigation, lsMenu}) => {
+export default function HeaderBar ({lsMenuSetVisible, navigation, lsMenu}) {
 
-    /* const navigationRef = useNavigationContainerRef();
-    const route = navigationRef.getCurrentRoute(); */
 
     function opener(show){
         if (show)
@@ -26,10 +24,6 @@ export default HeaderBar = ({lsMenuSetVisible, navigation, lsMenu}) => {
             <View style={style.headerRow}>
 
                 <View>
-                    {/* <Image
-                    //
-                        source={require('../img/header_logo.jpg')}
-                    /> */}
                 </View>
                 <View style={style.smth}>
                     <NetworkIndicator />
@@ -57,7 +51,7 @@ const style = StyleSheet.create({
         flex: 1,
         justifyContent: 'space-between',
         alignItems: 'end',
-        paddingBottom: 5,
+        // paddingBottom: 5,
     },
     headerName: {
         fontSize: 18,

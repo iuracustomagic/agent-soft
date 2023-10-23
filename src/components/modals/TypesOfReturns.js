@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import React from 'react';
+import {  Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
-import { DefaultBtn } from '../DefaultBtn';
-import { DefaultTextInput } from '../DefaultTextInput';
+
 import { RestBtn } from '../RestBtn';
 
 
@@ -20,8 +18,8 @@ export const TypeOfReturnPicker = ({visible, setVisible, types, chooseType}) => 
     if (!visible)
         return null;
 
-    
-    
+
+
     return(
         <Modal
             style={style.background}
@@ -47,7 +45,7 @@ export const TypeOfReturnPicker = ({visible, setVisible, types, chooseType}) => 
                                 {item.name}
                             </Text>
                         </TouchableOpacity>
-                        
+
                     }
                 />
                 <RestBtn

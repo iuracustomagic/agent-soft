@@ -1,44 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
-  TouchableOpacity,
   View,
-  Image,
   FlatList,
-  Modal,
   BackHandler
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import { consts } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
 import { styles } from '../styles/styles';
 import { DefaultBtn } from '../components/DefaultBtn';
 import { IconBtn } from '../components/IconBtn';
 import { DefaultTextInput } from '../components/DefaultTextInput';
 import { DefaultCheckBoxWithText } from '../components/DefaultCheckBoxWithText';
-import { CorrectDate, GetCorrectDateForDatePicker, GetCorrectJSDate, GetDate } from '../utils/GetDate';
+import { CorrectDate,  GetDate } from '../utils/GetDate';
 import { ProductPicker } from '../components/modals/ProductPicker';
 import { addNewItemsToClients, addNewItemsToRequests, addNewItemsToUnsyncRequests, createTableClients, createTableRequests, createTableUnsyncRequests, deleteItem, deleteTable, getAllItems, getDBConnection } from '../db/db';
 import { CounterForProductPicker } from '../components/modals/CounterForProductPicker';
-import { ClientPicker } from '../components/modals/ClientPicker';
 import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
-import { StorePicker } from '../components/modals/StorePicker';
 import { Loading } from '../components/modals/Loading';
 import Toast from 'react-native-simple-toast';
-import { GetBalance, GetClients, GetRequests, Ping, SendNewRequest } from '../API/api';
+import { GetBalance, ValidToken, GetRequests, Ping, SendNewRequest } from '../API/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CategoryPicker } from '../components/modals/CategoryPicker';
 import { ClientPickerAll } from '../components/modals/ClientPickerAnotherEdition';
 import { SureModal } from '../components/modals/SureModal';
-import RNDateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Auth } from '../API/auth';
+import {openDatabase} from "expo-sqlite";
+import { NetworkContext, RefresherContext } from '../context';
+
 
 export const NewRequestScreen = ({navigation}) => {
 
@@ -76,15 +68,16 @@ export const NewRequestScreen = ({navigation}) => {
     const [datePicker, setDatePicker] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [comment, setComment] = useState('');
+    const {network} = useContext(NetworkContext);
 
     function changeActive(value){
         setActiveBtn(value)
-        console.log(GetDate('tomorrow'));
+
     }
     function setDate(event, date){
         setDatePicker(false);
-        console.log(event);
-        console.log(date);
+        // console.log(event);
+        // console.log(date);
         setCurrentDate(date);
     }
     function sureModalVis(value, type){
@@ -102,7 +95,7 @@ export const NewRequestScreen = ({navigation}) => {
         setSureModal(value);
     }
     function sureModalPicked(){
-        console.log(sureModalValue)
+        // console.log(sureModalValue)
         switch (sureModalValue){
             case 'send':
                 sendRequest();
@@ -145,14 +138,14 @@ export const NewRequestScreen = ({navigation}) => {
     }
     function addToList(data){
         console.log('---------------data')
-        console.log(data)
+        // console.log(data)
         if (!products.find((e) => e.nomenclature_id === data.nomenclature_id)){
             setProducts([...products, data]);
             Toast.show('Продукт добавлен');
             alrdy(data.nomenclature_id, true, data.quantity);
         }
         else{
-            const indexCat = products.findIndex(i => i.nomenclature_id == data.nomenclature_id);
+            const indexCat = products.findIndex(i => i.nomenclature_id === data.nomenclature_id);
             products[indexCat].quantity = data.quantity;
             alrdy(data.nomenclature_id, false);
             alrdy(data.nomenclature_id, true, data.quantity);
@@ -161,10 +154,10 @@ export const NewRequestScreen = ({navigation}) => {
         }
     }
     function alrdy(id, value, qty){
-        const indexProduct = dbProducts.findIndex(i => i.id == id);
+        const indexProduct = dbProducts.findIndex(i => i.id === id);
         dbProducts[indexProduct].already = value;
-        const product = dbProducts.find(i => i.id == id);
-        const indexCat = categories.findIndex(i => i.id == product.category_id);
+        const product = dbProducts.find(i => i.id === id);
+        const indexCat = categories.findIndex(i => i.id === product.category_id);
         categories[indexCat].already = value;
         if (qty)
             dbProducts[indexProduct].pickedQty = qty;
@@ -172,19 +165,19 @@ export const NewRequestScreen = ({navigation}) => {
             delete dbProducts[indexProduct].pickedQty
     }
     function chosenProductHandler(data){
-        console.log(data)
+        // console.log(data)
         setChosenProduct(data);
         setCounterForProductPickerVisible(true);
     }
     function chosenCategoryHandler(data){
         setChosenCategory(data);
-        var newAr = dbProducts.filter(i => i.category_id == data);
+        let newAr = dbProducts.filter(i => i.category_id === data);
         setToShowProducts(newAr);
         setProductPickerVisible(true);
     }
     async function chosenClientHandler(data){
         //console.log(data)
-        if (data.stores != 'null'){
+        if (data.stores !== 'null'){
             await setChosenClient(JSON.parse(data.stores));
             await setClient(data);
             await setStorePickerVisible(true);
@@ -202,25 +195,9 @@ export const NewRequestScreen = ({navigation}) => {
     function chooseStore(store){
         var badPrices = 0;
         var nmcls_count = 0;
-        console.log(store)
+        // console.log(store)
         dbProducts.map(i => {
-            /* store.price_types.map(pt => {
-                //console.log(i.price)
 
-                if (i.price){
-                    var pf = i.price.find(p => p.price_type_id == pt.id);
-                }
-
-                if (pf)
-                    price_type = pf.price;
-
-                if (i.id == 1033){
-                        console.log(i);
-                        console.log(pt);
-                        console.log(i.price.find(p => p.price_type_id == pt.id))
-                        console.log(price_type)
-                    }
-            }) */
             var spt = store.price_types.find(spts => spts.organization_id == i.organization_id);
             var real_price = 0;
             if (spt){
@@ -238,8 +215,8 @@ export const NewRequestScreen = ({navigation}) => {
 
             nmcls_count++;
         })
-        console.log('badPrices: ' + badPrices);
-        console.log('nomenclatures count: ' + nmcls_count);
+        // console.log('badPrices: ' + badPrices);
+        // console.log('nomenclatures count: ' + nmcls_count);
         products.map(i => {
             i.price = dbProducts.find(p => i.nomenclature_id == p.id).real_price
         })
@@ -259,6 +236,8 @@ export const NewRequestScreen = ({navigation}) => {
         setClientPickerVisible(false);
         setRefSum(!refSum);
     }
+
+
     function goBack(){
         navigation.goBack();
     }
@@ -270,14 +249,11 @@ export const NewRequestScreen = ({navigation}) => {
         if (readyClient.id && products.length){
             if (products){
                 setLoading(true);
-                //var token = await AsyncStorage.getItem('@token');
-                var token = '12345';
-                console.log('token:')
-                console.log(token)
 
-                console.log(products)
+                const token = await AsyncStorage.getItem('@token');
+                const db = openDatabase('db.db' );
 
-                var reqUnsync = {
+                let reqUnsync = {
                     "client_id": readyClient.client_id,
                     "client_guid": readyClient.client_guid,
                     //"client_name": readyClient.name,
@@ -294,83 +270,71 @@ export const NewRequestScreen = ({navigation}) => {
                     "list": products,
                     "comment": comment
                 }
-                var req = {};
+                let req = {};
                 Object.assign(req, reqUnsync);
-                console.log('request:');
-                console.log(req);
-                const ping = await Ping(token);
-
-                /* const resp = {
-                    "status": 'not_ok'
-                }; */
-                const db = await getDBConnection();
-
-                reqUnsync.client_name = readyClient.client_name;
-                reqUnsync.store_name = readyClient.name;
-                reqUnsync.order_date = CorrectDate(GetDate('today'));
-                reqUnsync.sync_status = false;
-                reqUnsync.list = JSON.stringify(req.list);
-                reqUnsync.list = reqUnsync.list.replace(/[']+/g, "''");
-                //onsole.log(req.list);
-                reqUnsync = [reqUnsync];
-                var reqU = await addNewItemsToUnsyncRequests(db, 'unsyncReqs', reqUnsync);
-                console.log(reqU[0].insertId);
-                setLoading(false);
-                console.log('--------------------------------------------------')
-                console.log(req);
-
-                console.log(ping);
-                if (ping.status != 'ok'){
-                    const login = await AsyncStorage.getItem('@login');
-                    const pass = await AsyncStorage.getItem('@pass');
-                    const tryAuth = await Auth(login, pass);
-                    console.log(tryAuth);
-                    if (tryAuth.status == 'ok'){
-                        await AsyncStorage.setItem('@token', tryAuth.token);
-                        token = tryAuth.token;
-                    }
-
-                }
 
                 const resp = await SendNewRequest(token, req);
-                console.log(resp);
 
-                if (resp.status == 'ok'){
+                if (network){
                     Toast.show('Заявка успешно отправлена');
+                    // await deleteItem(db, 'unsyncReqs', reqU);
 
-
-                    var requests = await GetRequests(token);
-                    var clientsToAdd = await getAllItems(db, 'clients');
-                    console.log(clientsToAdd)
-                    if (requests.status == 'ok'){
+                    try {
+                        let requests = await GetRequests(token);
+                        // console.log('requests', requests)
+                        let clientsToAdd = await getAllItems(db, 'clients');
+                        // console.log('clientsToAdd', clientsToAdd[0])
+                        // if (requests.status == 'ok'){
                         await createTableRequests(db, 'requests');
                         await requests.orders.map(i => {
                             var client = clientsToAdd.find(c => c.id == i.client_id);
-                            //console.log
+
                             if (client)
                                 i.client_name = client.name.replace(/[']+/g, "''");
                             else
                                 i.client_name = 'noname'
-                            //console.log(JSON.parse(client.stores).find(s => s.id == i.store_id))
+
                             if (client)
                                 if (client.stores != 'null')
                                     if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                                    i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
+                                        i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
                                     else
-                                    i.store_name = 'null';
+                                        i.store_name = 'null';
                                 else
                                     i.store_name = 'null'
-                                i.list = i.list.replace(/[']+/g, "''");
-                                i.order_date = i.created_at.substring(0, 10);
+                            i.list = i.list.replace(/[']+/g, "''");
+                            i.order_date = i.created_at.substring(0, 10);
                         })
                         await addNewItemsToRequests(db, 'requests', requests.orders);
-                        await deleteItem(db, 'unsyncReqs', reqU[0].insertId);
-                        setLoading(false);
-                        //navigation.navigate('RequestScreen');
-                        navigation.replace('RequestScreen');
+
+                            } catch (err) {
+                                console.log(err)
+                            } finally {
+                                setLoading(false);
+                                navigation.replace('RequestScreen');
+                            }
                     }
-                }
                 else{
+
+
+
+                    // console.log('reqUnsync before', reqUnsync)
+                    reqUnsync.client_name = readyClient.client_name;
+                    reqUnsync.store_name = readyClient.name;
+                    reqUnsync.order_date = CorrectDate(GetDate('today'));
+                    reqUnsync.sync_status = false;
+                    reqUnsync.list = JSON.stringify(req.list);
+                    reqUnsync.list = reqUnsync.list.replace(/[']+/g, "''");
+
+                    reqUnsync = [reqUnsync];
+                    // console.log('reqUnsync after', reqUnsync)
+
+
+                    console.log('--------------------------------------------------')
+                    // console.log(req);
+                    let reqU = await addNewItemsToUnsyncRequests(db, 'unsyncReqs', reqUnsync);
+
+
                     Toast.show('Заявка сохранена на телефоне');
                     setLoading(false);
                     navigation.replace('RequestScreen');
@@ -380,45 +344,33 @@ export const NewRequestScreen = ({navigation}) => {
         else
             Toast.show('Не выбраны клиент или товары')
     }
+
+
     useEffect(() => {
+
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
         return () => backHandler.remove();
     }, [])
-    /* useEffect(() => {
-        console.log('----------------------db:')
-        console.log(dbProducts)
-    }, [dbProducts]) */
-    useEffect(() => {
-        //.toLocaleDateString("en-US")
 
-        var date = new Date();
+    useEffect(() => {
+
+        let date = new Date();
         date.setDate(date.getDate() + 1);
         setCurrentDate(date);
-        async function getDataFromDB(){
-            const token = await AsyncStorage.getItem('@token');
-            const balances = GetBalance(token);
-            /* const balances = {
-                "status": 'not_ok'
-            } */
-            const db = await getDBConnection();
+        const db = openDatabase('db.db' );
+        async function getDataWithoutNetwork(){
             const productsToAdd = await getAllItems(db, 'nomenclatures');
-            console.log(productsToAdd)
+            const clientsToAdd = await getAllItems(db, 'clients');
+
+            let categories = await getAllItems(db, 'categories');
+            let suppliers = await getAllItems(db, 'suppliers');
             productsToAdd.map(i => {
                 i.price = JSON.parse(i.price);
                 i.balance = JSON.parse(i.balance);
             })
-            const clientsToAdd = await getAllItems(db, 'clients');
-            var categories = await getAllItems(db, 'categories');
-            var suppliers = await getAllItems(db, 'suppliers');
-
             setCategories(categories);
-            if (balances.status == 'ok')
-                productsToAdd.map(i => {
-                    i.balance = balances.balance.filter(b => b.nomenclature_id == i.id);
-                })
             setDBProducts(productsToAdd);
-            console.log(productsToAdd);
-            var storesToAdd = [];
+            let storesToAdd = [];
             await clientsToAdd.map(i => {
                 if (i.stores.length && i.stores != 'null'){
                     i.stores = JSON.parse(i.stores);
@@ -449,8 +401,8 @@ export const NewRequestScreen = ({navigation}) => {
                     })
                 }
             })
-            console.log(storesToAdd.length)
-            await setStores(storesToAdd);
+
+            setStores(storesToAdd);
 
             suppliers.map(i => {
                 i.cats = [];
@@ -461,11 +413,96 @@ export const NewRequestScreen = ({navigation}) => {
                 suppliers.find(e => e.id == i.sup_id).cats.push(i)
                 //suppliers.cats.push(i)
             })
-            console.log(suppliers);
+
             setModdedCategories(suppliers);
         }
+
+        async function getDataFromDB(){
+            const token = await AsyncStorage.getItem('@token');
+            const productsToAdd = await getAllItems(db, 'nomenclatures');
+            const clientsToAdd = await getAllItems(db, 'clients');
+
+            let categories = await getAllItems(db, 'categories');
+            let suppliers = await getAllItems(db, 'suppliers');
+            try {
+                const validToken = await ValidToken(token)
+                console.log('ValidToken', validToken)
+                if(validToken.data === 'Token is valid') {
+                    const balances = await GetBalance(token);
+
+                    productsToAdd.map(i => {
+                        i.price = JSON.parse(i.price);
+                        i.balance = JSON.parse(i.balance);
+                    })
+
+                    setCategories(categories);
+                    if (balances.status === 'ok') {
+                        productsToAdd.map(i => {
+                            i.balance = balances.balance.filter(b => b.nomenclature_id === i.id);
+                        })
+                    }
+                    // console.log('productsToAdd', productsToAdd)
+                    setDBProducts(productsToAdd);
+
+                    let storesToAdd = [];
+                    await clientsToAdd.map(i => {
+                        if (i.stores.length && i.stores != 'null'){
+                            i.stores = JSON.parse(i.stores);
+                            i.statuses = JSON.parse(i.statuses);
+                            var blockedSups = [];
+                            if (i.statuses != null && i.statuses != 'null'){
+                                var blocked = false;
+                                if (i.statuses.find(s => s.blocked == 1))
+                                    blocked = true;
+                                i.statuses.map(s => {
+                                    if (s.blocked == 1)
+                                        blockedSups.push({
+                                            "id": s.organization_id
+                                        })
+                                })
+                            }
+                            i.stores.map(l => {
+                                l.client_guid = i.guid;
+                                l.client_name = i.name;
+                                l.debt = i.total_debt;
+                                if (blockedSups.length)
+                                    l.blockedSups = blockedSups;
+                                if (blocked)
+                                    l.blocked = true;
+                                else
+                                    l.blocked = false;
+                                storesToAdd.push(l);
+                            })
+                        }
+                    })
+
+                    setStores(storesToAdd);
+
+                    suppliers.map(i => {
+                        i.cats = [];
+                        i.visible = false;
+                    })
+
+                    categories.map(i => {
+                        suppliers.find(e => e.id == i.sup_id).cats.push(i)
+                        //suppliers.cats.push(i)
+                    })
+
+                    setModdedCategories(suppliers);
+                } else navigation.navigate('Login')
+            } catch (e) {
+                console.log(e)
+                navigation.navigate('Login')
+            }
+        }
         //console.log(dbProducts)
-        getDataFromDB()
+        if(network) {
+            getDataFromDB()
+        } else {
+            getDataWithoutNetwork()
+
+        }
+
     }, []);
 
     return(
@@ -565,7 +602,7 @@ export const NewRequestScreen = ({navigation}) => {
                             keyExtractor={item => item.nomenclature_id}
                             ItemSeparatorComponent={separatorItem}
                             renderItem={
-                                ({item}) => { //console.log(item)
+                                ({item}) => {
                                     return(
                                         <Pressable
                                             onPress={() => changeProduct(item.nomenclature_id)}
@@ -661,7 +698,8 @@ export const NewRequestScreen = ({navigation}) => {
             />
             <Loading visible={loading}/>
             {datePicker &&
-                <RNDateTimePicker
+                <DateTimePicker
+                    testID="dateTimePicker"
                     value={currentDate}
                     minimumDate={new Date()}
                     textColor={'red'}

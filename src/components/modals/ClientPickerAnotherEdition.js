@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import {  Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
-import { DefaultBtn } from '../DefaultBtn';
-import { DefaultTextInput } from '../DefaultTextInput';
+
 import { IconBtn } from '../IconBtn';
 import { RestBtn } from '../RestBtn';
 import { SearchInput } from '../SearchInput';
@@ -25,26 +23,26 @@ export const ClientPickerAll = ({visible, setVisible, stores, chooseStore}) => {
         }
         else
             setClearBtn(false)
-            
+
     }, [search])
 
     const hide = () => {
-        
+
         setVisible(false);
     }
 
     useEffect(() => {
         if (!visible)
             setSearch();
-        console.log(stores)
-        
+        // console.log(stores)
+
     }, [visible])
 
     if (!visible)
         return null;
-        
-    
-    
+
+
+
     return(
         <Modal
             style={style.background}
@@ -73,12 +71,12 @@ export const ClientPickerAll = ({visible, setVisible, stores, chooseStore}) => {
                         }}
                     />
                 </View>
-                
+
                 <FlatList
                     data={filtered ? filtered : stores}
                     keyExtractor={item => item.id}
                     renderItem={
-                        ({item}) => 
+                        ({item}) =>
                         <TouchableOpacity
                             style={style.singleItem}
                             onPress={() => {chooseStore(item)}}
@@ -87,10 +85,10 @@ export const ClientPickerAll = ({visible, setVisible, stores, chooseStore}) => {
                                 {item.name}
                             </Text>
                         </TouchableOpacity>
-                        
+
                     }
                 />
-                <RestBtn 
+                <RestBtn
                     callback={hide}
                     text={consts.CLOSE}
                 />

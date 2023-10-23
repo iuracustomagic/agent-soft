@@ -1,5 +1,3 @@
-
-
 import Toast from 'react-native-simple-toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { currentUrl } from '../consts/const';
@@ -17,14 +15,26 @@ export const PreSync = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
+export const ValidToken = async (token) => {
+
+        const response =  await fetch(currentUrl + '/api/validate-token', {
+            method: 'get',
+            headers: {
+                "Authorization": "Bearer " + token
+            },
+        })
+        return await response.json()
+
+}
+
 
 export const GetNomenclatures = async (token) => {
-    console.log(currentUrl)
-    console.log(token)
+
     return await fetch(currentUrl + '/api/nomenclature/list', {
         method: 'get',
         headers: {
@@ -37,13 +47,14 @@ export const GetNomenclatures = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
 
 export const GetClients = async (token) => {
-    console.log(token)
+    // console.log(token)
     return await fetch(currentUrl + '/api/clients/list', {
         method: 'get',
         headers: {
@@ -56,8 +67,10 @@ export const GetClients = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
+
 
 }
 
@@ -74,7 +87,8 @@ export const GetSuppliers = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -92,7 +106,8 @@ export const GetCategories = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -109,7 +124,8 @@ export const GetRequests = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -126,7 +142,8 @@ export const GetReturns = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -143,7 +160,8 @@ export const GetTypesOfReturns = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -160,14 +178,15 @@ export const GetCashOrders = async (token) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
 
 export const SendNewRequest = async (token, data) => {
-    /* console.log(token);
-    console.log(data); */
+     console.log(token);
+    console.log('data', data);
     return await fetch(currentUrl + '/api/order/new', {
         method: 'post',
         headers: {
@@ -177,14 +196,11 @@ export const SendNewRequest = async (token, data) => {
         body: JSON.stringify(data)
     })
         .then((response) => {
-            console.log('---------')
-            console.log('response:')
-            console.log(response)
-            console.log('---------')
+
             return response.json();
         })
         .catch(async(error) => {
-            console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            console.log('SendNewRequest !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             const login = await AsyncStorage.getItem('@login');
             var err = {
                 "email": login,
@@ -194,14 +210,15 @@ export const SendNewRequest = async (token, data) => {
             }
             console.log(err);
             const resp = await SendLogError(err);
-            console.log(resp);
+            // console.log(resp);
             if (resp)
                 if (resp.status)
                     if (resp.status == 'ok')
                         Toast.show('Ошибка отправлена на сервер');
-            console.log(resp);
+            // console.log(resp);
             return {
-                'status': 'got error'
+                'status': 'got error',
+            'message': error.message,
             }
         });
 
@@ -218,11 +235,12 @@ export const SendNewReturn = async (token, data) => {
         body: JSON.stringify(data)
     })
         .then((response) => {
-            console.log(response)
+            // console.log(response)
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -242,7 +260,8 @@ export const SendNewCashOrder = async (token, data) => {
             return response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
@@ -257,18 +276,19 @@ export const SendLogError = async (data) => {
         body: JSON.stringify(data)
     })
         .then((response) => {
-            console.log(response)
+            // console.log(response)
             response.json();
         })
         .catch((error) => {return {
-            'status': 'got error'
+            'status': 'got error',
+            'message': error.message,
         }});
 
 }
 
 export const GetBalance = async (token) => {
-    /* console.log(token);
-    console.log(data); */
+    console.log('token ', token);
+    // console.log(data);
     return await fetch(currentUrl + '/api/balance/list', {
         method: 'get',
         headers: {
@@ -277,10 +297,11 @@ export const GetBalance = async (token) => {
         },
     })
         .then((response) => {
+            console.log('sent response')
             return response.json();
         })
         .catch(async(error) => {
-            console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            console.log('catch GetBalance !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             const login = await AsyncStorage.getItem('@login');
             var err = {
                 "email": login,
@@ -288,16 +309,17 @@ export const GetBalance = async (token) => {
                 "name": error.name,
                 "message": error.message
             }
-            console.log(err);
+            console.log('err ', error);
             const resp = await SendLogError(err);
-            console.log(resp);
+            // console.log(resp);
             if (resp)
                 if (resp.status)
                     if (resp.status == 'ok')
                         Toast.show('Ошибка отправлена на сервер');
-            console.log(resp);
+            // console.log(resp);
             return {
-                'status': 'got error'
+                'status': 'got error',
+            'message': error.message,
             }
         });
 
@@ -317,5 +339,46 @@ export const Ping = async (token) => {
             return response.json();
         })
         .catch((error) => {return {"status": 'not ok'}});
+
+}
+
+export const SendUnsyncRequest = async (token, data) => {
+
+    // console.log('data', data);
+    return await fetch(currentUrl + '/api/orders/send-unsync-order', {
+        method: 'post',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(data)
+    })
+        .then((response) => {
+
+            return response.json();
+        })
+        .catch(async(error) => {
+            console.log('catch SendUnsyncRequest !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            const login = await AsyncStorage.getItem('@login');
+            var err = {
+                "email": login,
+                "breakpoint": 'After order. Token: ' + token,
+                "name": error.name,
+                "data": data,
+                "message": error.message
+            }
+            // console.log(err);
+            const resp = await SendLogError(err);
+            // console.log(resp);
+            if (resp)
+                if (resp.status)
+                    if (resp.status == 'ok')
+                        Toast.show('Ошибка отправлена на сервер');
+            // console.log(resp);
+            return {
+                'status': 'got error',
+                'message': error.message,
+            }
+        });
 
 }

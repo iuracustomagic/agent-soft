@@ -1,13 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import React from 'react';
+import { Modal, StyleSheet, View, FlatList, Text } from 'react-native';
+
 import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
-import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
-import { DefaultBtn } from '../DefaultBtn';
-import { DefaultTextInput } from '../DefaultTextInput';
-import { IconBtn } from '../IconBtn';
+
 import { RestBtn } from '../RestBtn';
 
 
@@ -22,8 +17,8 @@ export const SureModal = ({visible, setVisible, callback, text}) => {
     if (!visible)
         return null;
 
-    
-    
+
+
     return(
         <Modal
             transparent={true}
@@ -37,7 +32,7 @@ export const SureModal = ({visible, setVisible, callback, text}) => {
                     >
                         <Pressable>
                             <View style={style.modalContainer}>
-                                
+
                                 <View style={style.inputRow}>
                                     <Text style={style.text}>
                                         {
@@ -45,7 +40,7 @@ export const SureModal = ({visible, setVisible, callback, text}) => {
                                         }
                                     </Text>
                                 </View>
-                                
+
 
                                 <View style={style.btnsRow}>
                                     <RestBtn
@@ -69,7 +64,7 @@ export const SureModal = ({visible, setVisible, callback, text}) => {
                         </Pressable>
                     </Pressable>
                 </View>
-            
+
         </Modal>
     )
 }

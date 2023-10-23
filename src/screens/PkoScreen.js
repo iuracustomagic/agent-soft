@@ -41,7 +41,7 @@ export const PkoScreen = ({navigation}) => {
     const [orders, setOrders] = useState([]);
     const [refresh, setRefresh] = useState(false);
     const [totalSum, setTotalSum] = useState(0);
-    
+
     function itemVisibleChanger(value){
         setItemVisible(value);
     }
@@ -125,7 +125,7 @@ export const PkoScreen = ({navigation}) => {
 
     function finder(value){
         if (value){
-            
+
         }
     }
     const showItemModal = async (item) => {
@@ -163,7 +163,7 @@ export const PkoScreen = ({navigation}) => {
                     <Text style={styles.listHeaderTitle}>{consts.PKO}</Text>
                     <View style={style.searchBar}>
                         <View style={style.iconAdd}>
-                            <IconBtn 
+                            <IconBtn
                                 icon={'filter'}
                                 color={'#ff6365'}
                                 size={26}
@@ -171,17 +171,17 @@ export const PkoScreen = ({navigation}) => {
                             />
                         </View>
                         <View style={style.search}>
-                            
+
                             <DefaultTextInput
                                 style={style.search}
                                 placeholder={consts.SEARCH}
                                 onEndEditing={finder}
                                 mt={1}
                             />
-                            
+
                         </View>
                         <View style={style.iconAdd}>
-                            <IconBtn 
+                            <IconBtn
                                 icon={'pluscircle'}
                                 color={'#ff6365'}
                                 size={26}
@@ -208,11 +208,11 @@ export const PkoScreen = ({navigation}) => {
                 <View
                     style={style.flatList}
                 >
-                    <FlatList 
+                    <FlatList
                         style={style.flatList2}
                         extraData={refresh}
                         data={data}
-                        renderItem={({item}) =>{ 
+                        renderItem={({item}) =>{
 
                                 return(
                                 <TouchableOpacity
@@ -227,13 +227,13 @@ export const PkoScreen = ({navigation}) => {
                                                 name={'close'}
                                                 size={16} />
                                             }
-                                            {item.client_name} 
+                                            {item.client_name}
                                         </Text>
                                         <Text style={style.itemText}>
                                             {item.amount}
                                         </Text>
                                         {item.doc_type ?
-                                            
+
                                             <View style={[style.itemText, {maxWidth: '6%'}, {alignItems: 'center'}]}>
                                                 <AntIcon
                                                     size={16}
@@ -275,6 +275,7 @@ export const PkoScreen = ({navigation}) => {
                 item={chosenItem}
                 productList={productList}
                 pko={true}
+                navigation={navigation}
             />
             <Filtrum
                 visible={filterVisible}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect} from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import {  NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,18 +10,17 @@ import { ReturnScreen } from './src/screens/ReturnScreen';
 import { NewRequestScreen } from './src/screens/NewRequestScreen';
 import { NewReturnScreen } from './src/screens/NewReturnScreen';
 import { NewPkoScreen } from './src/screens/NewPkoScreen';
+import {CopyRequestScreen} from "./src/screens/CopyRequestScreen";
 import HeaderBar from './src/components/HeaderBar';
-import { NavigatorContext, NetworkContext, RefresherContext } from './src/context';
+import {  NetworkContext, RefresherContext } from './src/context';
 import NetInfo from "@react-native-community/netinfo";
-import { getDBConnection } from './src/db/db';
-import { SendNewRequest } from './src/API/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-simple-toast';
+
 import { SyncOrders, SyncPKO, SyncReturns } from './src/utils/Helper';
 import { LeftSideMenu } from './src/components/modals/LeftSideMenu';
 import * as Font from "expo-font";
 
 import Apploading from "expo-app-loading";
+import {CopyPkoScreen} from "./src/screens/CopyPkoScreen";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,6 +30,7 @@ const getFonts = () =>
       'AntDesign': require("./assets/fonts/AntDesign.ttf"),
       'FontAwesome': require("./assets/fonts/FontAwesome5_Solid.ttf"),
       'FontAwesome5_Solid': require("./assets/fonts/FontAwesome5_Solid.ttf"),
+      'FontAwesome5_Regular': require("./assets/fonts/FontAwesome5_Solid.ttf"),
     });
 
 const App = () => {
@@ -38,14 +38,11 @@ const App = () => {
   const [conn, setConn] = useState(true);
   const [network, setNetwork] = useState(false);
   const [refresher, setRefresher] = useState(false);
-  const [headervs, setHeadervs] = useState(true);
   const [lsMenu, setlsMenu] = useState(false);
   const [fontsloaded, setFontsLoaded] = useState(false);
-  //const {navigator, setNavigator} = useContext(NavigatorContext);
 
-  const headerVis = (value) => {
-    setHeadervs(value);
-  }
+
+
   const lsMenuVis = (value) => {
     setlsMenu(value);
   }
@@ -58,8 +55,7 @@ const App = () => {
       setRefresher(!refresher)
     if (SyncPKO(conn))
       setRefresher(!refresher)
-    //console.log('------------')
-    //Toast.show('connection has changed')
+
   }, [conn])
 
   const unsubscribe = NetInfo.addEventListener(state => {
@@ -91,7 +87,6 @@ if(fontsloaded) {
                 setRefresher
               }}
           >
-
             <Stack.Navigator
                 initialRouteName="Login"
                 screenOptions={{header: () => <HeaderBar lsMenu={lsMenuVis} />}}
@@ -122,6 +117,10 @@ if(fontsloaded) {
                   name="NewRequestScreen"
                   component={NewRequestScreen}
               />
+                <Stack.Screen
+                    name="CopyRequestScreen"
+                    component={CopyRequestScreen}
+                />
               <Stack.Screen
                   name="NewReturnScreen"
                   component={NewReturnScreen}
@@ -130,6 +129,10 @@ if(fontsloaded) {
                   name="NewPKOScreen"
                   component={NewPkoScreen}
               />
+                <Stack.Screen
+                    name="CopyPkoScreen"
+                    component={CopyPkoScreen}
+                />
             </Stack.Navigator>
 
             <LeftSideMenu

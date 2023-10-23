@@ -1,39 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 
 import {
-  SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
-  Text,
-  useColorScheme,
-  TouchableOpacity,
   View,
-  Image,
-  FlatList,
   BackHandler,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import { consts } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
 import { styles } from '../styles/styles';
 import { DefaultBtn } from '../components/DefaultBtn';
-import { IconBtn } from '../components/IconBtn';
 import { DefaultTextInput } from '../components/DefaultTextInput';
 import { DefaultCheckBoxWithText } from '../components/DefaultCheckBoxWithText';
 import { CorrectDate, GetDate } from '../utils/GetDate';
-import { ClientPicker } from '../components/modals/ClientPicker';
-import { StorePicker } from '../components/modals/StorePicker';
 import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
 import { addNewItemsToPKO, addNewItemsToUnsyncPKO, createTablePKO, deleteItem, getAllItems, getDBConnection } from '../db/db';
 import { SupplierPicker } from '../components/modals/SupplierPicker';
-import { GetCashOrders, SendNewCashOrder } from '../API/api';
+import {GetCashOrders, SendNewCashOrder, ValidToken} from '../API/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-simple-toast';
 import { Loading } from '../components/modals/Loading';
 import { SureModal } from '../components/modals/SureModal';
 import { ClientPickerAll } from '../components/modals/ClientPickerAnotherEdition';
+import {openDatabase} from "expo-sqlite";
+import { NetworkContext } from '../context';
 
 export const NewPkoScreen = ({navigation}) => {
 
@@ -42,7 +32,6 @@ export const NewPkoScreen = ({navigation}) => {
     const [supplierPickerVisible, setSupplierPickerVisible] = useState(false);
     const [chosenClient, setChosenClient] = useState({});
     const [readyClient, setReadyClient] = useState({});
-    const [chosenStore, setChosenStore] = useState({});
     const [chosenSupplier, setChosenSupplier] = useState({});
     const [client, setClient] = useState({});
     const [dbClients, setDBClients] = useState([]);
@@ -55,6 +44,7 @@ export const NewPkoScreen = ({navigation}) => {
     const [sureModalValue, setSureModalValue] = useState('');
     const [stores, setStores] = useState([]);
     const [docType, setDocType] = useState(0);
+    const {network} = useContext(NetworkContext);
 
     function sureModalVis(value, type){
         if (type){
@@ -71,7 +61,7 @@ export const NewPkoScreen = ({navigation}) => {
         setSureModal(value);
     }
     function sureModalPicked(){
-        console.log(sureModalValue)
+        // console.log(sureModalValue)
         switch (sureModalValue){
             case 'send':
                 sendRequest();
@@ -100,13 +90,49 @@ export const NewPkoScreen = ({navigation}) => {
         }
     }
     useEffect(() => {
+        const db = openDatabase('db.db' );
+
         async function getDataFromDB(){
-            const db = await getDBConnection();
+            const token = await AsyncStorage.getItem('@token');
+
+            try {
+                const validToken = await ValidToken(token)
+
+                if(validToken.data === 'Token is valid') {
+
+                    const clientsToAdd = await getAllItems(db, 'clients');
+                    var suppliers = await getAllItems(db, 'suppliers');
+                    setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
+                    setDBSuppliers(suppliers);
+
+                    var storesToAdd = [];
+                    await clientsToAdd.map(i => {
+                        if (i.stores.length && i.stores != 'null'){
+                            i.stores = JSON.parse(i.stores);
+                            i.stores.map(l => {
+                                l.client_guid = i.guid;
+                                l.client_name = i.name;
+                                storesToAdd.push(l);
+                            })
+                        }
+                    })
+                    await setStores(storesToAdd);
+                } else {
+                    navigation.navigate('Login')
+                }
+                } catch (e) {
+                navigation.navigate('Login')
+            }
+
+
+        }
+
+        async function getDataWithoutNetwork() {
             const clientsToAdd = await getAllItems(db, 'clients');
             var suppliers = await getAllItems(db, 'suppliers');
             setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
             setDBSuppliers(suppliers);
-            console.log(suppliers);
+
             var storesToAdd = [];
             await clientsToAdd.map(i => {
                 if (i.stores.length && i.stores != 'null'){
@@ -120,17 +146,23 @@ export const NewPkoScreen = ({navigation}) => {
             })
             await setStores(storesToAdd);
         }
-        //console.log(dbProducts)
-        getDataFromDB()
-    }, []);
-    
+        console.log('network', network)
+        if(network) {
+            getDataFromDB()
+        } else {
+            getDataWithoutNetwork()
+
+        }
+    }, [network]);
+
 
     function chooseStore(store){
+        // console.log('chooseStore', store)
         setReadyClient(store);
         setClientPickerVisible(false);
     }
     function chooseSupplier(sup){
-        console.log(sup)
+        // console.log('chooseSupplier', sup)
         setChosenSupplier(sup);
         setSupplierPickerVisible(false);
     }
@@ -142,7 +174,8 @@ export const NewPkoScreen = ({navigation}) => {
             const token = await AsyncStorage.getItem('@token');
             setLoading(true);
             const db = await getDBConnection();
-            var reqUnsync = {
+            console.log('after db connection')
+            let reqUnsync = {
                 "client_id": readyClient.client_id,
                 "client_guid": readyClient.client_guid,
                 "store_id": readyClient.id,
@@ -154,9 +187,9 @@ export const NewPkoScreen = ({navigation}) => {
                 "exported": 0, // 0 или 1
                 "comment": comment.replace(/[']+/g, "''")
             }
-            var req = {};
+            let req = {};
             Object.assign(req, reqUnsync);
-            console.log(req);
+            // console.log(req);
             reqUnsync.client_name = readyClient.client_name;
             reqUnsync.store_name = readyClient.name;
             reqUnsync.supplier_name = chosenSupplier.name;
@@ -165,55 +198,68 @@ export const NewPkoScreen = ({navigation}) => {
             reqUnsync.sync_status = false;
             reqUnsync.order_date = CorrectDate(GetDate('today'));
             reqUnsync = [reqUnsync];
-            var reqU = await addNewItemsToUnsyncPKO(db, 'unsyncPKO', reqUnsync);
-            var resp = await SendNewCashOrder(token, req);
-            /* var resp = {
-                'status' : 'not_ok'
-            } */
-            
-            if (resp.status == 'ok'){
-                var requests = await GetCashOrders(token);
-                var clientsToAdd = await getAllItems(db, 'clients');
-                var suppliers = await getAllItems(db, 'suppliers');
-                await createTablePKO(db, 'pko');
-                await requests.cash_order_receipts.map(i => {
-                    var supplier = suppliers.find(s => s.id == i.organization_id);
-                    var client = clientsToAdd.find(c => c.id == i.client_id);
-                    if (client)
-                        i.client_name = client.name.replace(/[']+/g, "''");
-                    else
-                        i.client_name = 'noname'
-                    if (client)
-                        if (client.stores != 'null')
-                          if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                            i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
-                          else
-                            i.store_name = 'null';
-                    else
-                        i.store_name = 'null'
-                    i.supplier_name = supplier.name;
-                    i.supplier_id = supplier.id;
-                    i.supplier_guid = supplier.guid;
-                    i.order_date = i.created_at.substring(0, 10);
-                    i.comment = i.comment.replace(/[']+/g, "''");
-                })
-                await addNewItemsToPKO(db, 'pko', requests.cash_order_receipts);
-                await deleteItem(db, 'unsyncPKO', reqU[0].insertId);
-                //navigation.navigate('PKOScreen');
-                navigation.replace('PKOScreen');
-                Toast.show('ПКО успешно отправлен');
-            }
-            else{
-                setLoading(false);
-                Toast.show('ПКО сохранен на телефоне');
-                navigation.replace('PKOScreen');
-            }
-            setLoading(false);
-            
+
+           try {
+               var reqU = await addNewItemsToUnsyncPKO(db, 'unsyncPKO', reqUnsync);
+               console.log('after addNewItemsToUnsyncPKO')
+               // console.log('reqU insertId', reqU)
+               const resp = await SendNewCashOrder(token, req);
+               if (resp.status === 'ok'){
+                   await deleteItem(db, 'unsyncPKO', reqU);
+                   var requests = await GetCashOrders(token);
+                   var clientsToAdd = await getAllItems(db, 'clients');
+                   var suppliers = await getAllItems(db, 'suppliers');
+                   await createTablePKO(db, 'pko');
+                   try {
+                       await requests.cash_order_receipts.map(i => {
+                           var supplier = suppliers.find(s => s.id == i.organization_id);
+                           var client = clientsToAdd.find(c => c.id == i.client_id);
+                           if (client)
+                               i.client_name = client.name.replace(/[']+/g, "''");
+                           else
+                               i.client_name = 'noname'
+                           if (client)
+                               if (client.stores != 'null')
+                                   if (JSON.parse(client.stores).find(s => s.id == i.store_id))
+                                       i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
+                                   else
+                                       i.store_name = 'null';
+                               else
+                                   i.store_name = 'null'
+                           i.supplier_name = supplier.name;
+                           i.supplier_id = supplier.id;
+                           i.supplier_guid = supplier.guid;
+                           i.order_date = i.created_at.substring(0, 10);
+                           i.comment = i.comment.replace(/[']+/g, "''");
+                       })
+                       await addNewItemsToPKO(db, 'pko', requests.cash_order_receipts);
+
+                   } catch (e) {
+                       console.log(e)
+                   } finally {
+                       navigation.replace('PKOScreen');
+                       Toast.show('ПКО успешно отправлен');
+                   }
+
+                   //navigation.navigate('PKOScreen');
+
+               }
+               else{
+                   setLoading(false);
+                   Toast.show('ПКО сохранен на телефоне');
+                   navigation.replace('PKOScreen');
+               }
+
+           } catch (e) {
+               console.log(e)
+           }finally {
+               setLoading(false);
+           }
+
         }
         else
             Toast.show('Не указан клиент, поставщик или сумма')
-        
+
     }
     function setterSum(value){
         setSum(parseFloat(value));
@@ -233,7 +279,7 @@ export const NewPkoScreen = ({navigation}) => {
                     style={style.scroll}
                 >
                     <ScrollView
-                        
+
                     >
                         <DefaultCheckBoxWithText
                             text={consts.TYPE_OF_DOCUMENT}
@@ -254,7 +300,7 @@ export const NewPkoScreen = ({navigation}) => {
                                 mt={15}
                             />
                         </Pressable>
-                        
+
                         <Pressable
                             onPress={() => supplierPickerVisibility(true)}
                         >

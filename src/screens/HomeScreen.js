@@ -1,30 +1,27 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
-  TouchableOpacity,
   View,
-  Image,
+    TextInput,
+    Button
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import * as SQLite from 'expo-sqlite';
+
 import { consts, ver } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
 import { styles } from '../styles/styles';
-import { DefaultBtn } from '../components/DefaultBtn';
+
 import { IconBtn } from '../components/IconBtn';
-import { LeftSideMenu } from '../components/modals/LeftSideMenu';
+
 
 export const HomeScreen = ({navigation}) => {
+    const [names, setNames] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [currentName, setCurrentName] = useState(undefined);
 
-
-
-
+const db = SQLite.openDatabase('db.db')
 
     function requestScreen(){
         navigation.navigate('NewRequestScreen')
@@ -36,34 +33,44 @@ export const HomeScreen = ({navigation}) => {
         navigation.navigate('NewPKOScreen')
     }
 
+    // useEffect(()=> {
+    //     db.transaction(tx => {
+    //         tx.executeSql('CREATE TABLE IF NOT EXISTS names (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)')
+    //     });
+    //
+    //
+    //
+    // },[db])
+
+    const addName = () => {
+        db.transaction(tx => {
+            tx.executeSql('INSERT INTO names (name) values (?)', [currentName],
+                (txObj, resultSet) => {
+                    let existingNames = [...names];
+                    existingNames.push({ id: resultSet.insertId, name: currentName});
+                    setNames(existingNames);
+                    setCurrentName(undefined);
+                },
+                (txObj, error) => console.log(error)
+            );
+        });
+    }
+
+
+    // const showNames = () => {
+    //     return names.map((name, index) => {
+    //         return (
+    //             <View key={index} style={styles.row}>
+    //                 <Text>{name.name}</Text>
+    //
+    //             </View>
+    //         );
+    //     });
+    // };
+
     return(
         <View style={{height: '100%'}}>
-            {/* <HeaderBar
-                navigation={navigation}
-            /> */}
 
-            {/* <View style={styles.hsCenterBlock}>
-                <View style={styles.hsBtnsBlock}>
-                    <DefaultBtn
-                        text={consts.RETURN}
-                        callback={returnScreen}
-                        icon='filetext1'
-                        upperText={true}
-                    />
-                    <DefaultBtn
-                        text={consts.REQUEST}
-                        callback={requestScreen}
-                        icon='filetext1'
-                        upperText={true}
-                    />
-                    <DefaultBtn
-                        text={consts.PKO}
-                        callback={pkoScreen}
-                        icon='filetext1'
-                        upperText={true}
-                    />
-                </View>
-            </View> */}
             <View style={[styles.column, style.center]}>
                 <View style={[styles.row,
                     {width: '80%', alignSelf: 'center'}]}>
@@ -93,7 +100,13 @@ export const HomeScreen = ({navigation}) => {
                         text={consts.PKO}
                         flexWidth={1}
                     />
+
                 </View>
+                {/*<View>*/}
+                {/*    <TextInput value={currentName} placeholder='name' onChangeText={setCurrentName} />*/}
+                {/*    <Button title="Add Name" onPress={addName} />*/}
+                {/*    {showNames()}*/}
+                {/*</View>*/}
             </View>
             <Text style={styles.version}>v1.4 {ver}</Text>
 

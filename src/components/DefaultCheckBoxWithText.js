@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 
 
 import {
@@ -7,14 +7,16 @@ import {
 
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 
-export const DefaultCheckBoxWithText= ({text, onChange}) => {
-
+export const DefaultCheckBoxWithText= ({text, onChange, checked}) => {
+    const [checkboxState, setCheckboxState] = React.useState(checked);
 
 
 
     function change(value){
-        if (onChange)
+        if (onChange )
             onChange(value)
+        if ( checked)
+            onChange(checked)
     }
 
 
@@ -30,10 +32,12 @@ export const DefaultCheckBoxWithText= ({text, onChange}) => {
                 fillColor="#ff6365"
                 unfillColor="white"
                 text="Custom Checkbox"
-                iconStyle={{ borderColor: "#ff6365", borderRadius: 0 }}
+                iconStyle={{ borderColor: "#ff6365"}}
                 textStyle={{ fontFamily: "JosefinSans-Regular" }}
                 onPress={(checked) => change(checked)}
+                // onPress={() => setCheckboxState(!checkboxState)}
                 disableText={true}
+                isChecked={checkboxState}
             />
 
         </View>

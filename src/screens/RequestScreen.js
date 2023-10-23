@@ -1,23 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
 
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
   TouchableOpacity,
   View,
-  Image,
   FlatList,
 } from 'react-native';
-import { NavigationContainer, useIsFocused } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {  useIsFocused } from '@react-navigation/native';
+
 import { consts } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
 import { styles } from '../styles/styles';
-import { DefaultBtn } from '../components/DefaultBtn';
 import { IconBtn } from '../components/IconBtn';
 import { DefaultTextInput } from '../components/DefaultTextInput';
 import { getAllItems, getDBConnection } from '../db/db';
@@ -25,7 +18,6 @@ import { OrderModal } from '../components/modals/OrderModal';
 import { CorrectDate, GetCorrectJSDate, GetDate } from '../utils/GetDate';
 import AntIcon from "react-native-vector-icons/AntDesign";
 import { NetworkContext, RefresherContext } from '../context';
-import SimpleToast from 'react-native-simple-toast';
 import { Filtrum } from '../components/modals/Filtrum';
 
 export const RequestScreen = ({navigation}) => {
@@ -42,7 +34,7 @@ export const RequestScreen = ({navigation}) => {
     const [refresh, setRefresh] = useState(false);
     const [totalSum, setTotalSum] = useState(0);
     const {refresher, setRefresher} = useContext(RefresherContext);
-    
+
     function itemVisibleChanger(value){
         setItemVisible(value);
     }
@@ -126,14 +118,13 @@ export const RequestScreen = ({navigation}) => {
 
     function finder(value){
         if (value){
-            
+
         }
     }
     const showItemModal = async (item) => {
-        await setChosenItem(item);;
+        await setChosenItem(item);
         console.log(chosenItem)
-/*         await setProductList(item.list);
-        console.log(productList); */
+
         itemVisibleChanger(true);
     }
 
@@ -142,8 +133,7 @@ export const RequestScreen = ({navigation}) => {
             const db = await getDBConnection();
             var unsyncOrders = await getAllItems(db, 'unsyncReqs');
             var defaultOrders = await getAllItems(db, 'requests');
-            console.log(unsyncOrders)
-            console.log(defaultOrders)
+
             await defaultOrders.map((i) => {
                 i.list = JSON.parse(i.list)
             })
@@ -152,28 +142,14 @@ export const RequestScreen = ({navigation}) => {
                     i.local = true;
                     i.list = JSON.parse(i.list)
                 })
-                /* unsyncOrders = unsyncOrders.filter(i => i.order_date == CorrectDate(GetDate('today')) && i.sync_status == 0);
-                console.log(unsyncOrders); */
+
             }
             await setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
-            
-            /* orders = orders.sort((a, b) => {
-                var key1 = GetCorrectJSDate(a.order_date).getTime();
-                var key2 = GetCorrectJSDate(b.order_date).getTime();
-                if (key1 > key2) {
-                    return -1;
-                } else if (key1 == key2) {
-                    return 0;
-                } else {
-                    return 1;
-                }
-                
-            }) */
-            /* orders = orders.filter(i => i.order_date == CorrectDate(GetDate('today')));
-            console.log(orders); */
+
+
             defaultOrders = await unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders;
             defaultOrders = await defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
-            console.log(defaultOrders)
+            // console.log('defaultOrders', defaultOrders[0])
             await setData(defaultOrders);
             await setRefresh(!refresh);
         }
@@ -187,7 +163,7 @@ export const RequestScreen = ({navigation}) => {
                     <Text style={styles.listHeaderTitle}>{consts.REQUESTS}</Text>
                     <View style={style.searchBar}>
                         <View style={style.iconAdd}>
-                            <IconBtn 
+                            <IconBtn
                                 icon={'filter'}
                                 color={'#ff6365'}
                                 size={26}
@@ -195,17 +171,17 @@ export const RequestScreen = ({navigation}) => {
                             />
                         </View>
                         <View style={style.search}>
-                            
+
                             <DefaultTextInput
                                 style={style.search}
                                 placeholder={consts.SEARCH}
                                 onEndEditing={finder}
                                 mt={1}
                             />
-                            
+
                         </View>
                         <View style={style.iconAdd}>
-                            <IconBtn 
+                            <IconBtn
                                 icon={'pluscircle'}
                                 color={'#ff6365'}
                                 size={26}
@@ -223,9 +199,10 @@ export const RequestScreen = ({navigation}) => {
                         <Text style={[style.itemText, style.colorWhite, {maxWidth: '6%'}]}>
                             ТД
                         </Text>
-                        <Text style={[style.itemText, style.colorWhite, {maxWidth: '25%'}]}>
+                        <Text style={[style.itemText, style.colorWhite, {maxWidth: '28%'}]}>
                             {consts.DATE}
                         </Text>
+
                     </View>
                 </View>
 
@@ -236,10 +213,11 @@ export const RequestScreen = ({navigation}) => {
                         style={style.flatList2}
                         extraData={[refresh, refresher]}
                         data={data}
-                        renderItem={({item}) =>{ 
+                        renderItem={({item}) =>{
 
                                 return(
                                 <TouchableOpacity
+                                    style={ {backgroundColor: item.sync_status === 0 || item.local ? 'orange': ''}}
                                     onPress={() => {
                                         showItemModal(item)
                                     }}
@@ -251,13 +229,14 @@ export const RequestScreen = ({navigation}) => {
                                                 name={'close'}
                                                 size={16} />
                                             }
-                                            {item.client_name} 
+
+                                            {item.client_name}
                                         </Text>
                                         <Text style={style.itemText}>
                                             {item.amount}
                                         </Text>
                                         {item.doc_type ?
-                                            
+
                                             <View style={[style.itemText, {maxWidth: '6%'}, {alignItems: 'center'}]}>
                                                 <AntIcon
                                                     size={16}
@@ -274,9 +253,10 @@ export const RequestScreen = ({navigation}) => {
                                                 />
                                             </View>
                                         }
-                                        <Text style={[style.itemText, , {maxWidth: '25%'}]}>
+                                        <Text style={[style.itemText, {maxWidth: '28%'}]}>
                                             {item.order_date}
                                         </Text>
+
                                     </View>
                                 </TouchableOpacity>
                                 )
@@ -298,6 +278,7 @@ export const RequestScreen = ({navigation}) => {
                 setVisible={setItemVisible}
                 item={chosenItem}
                 productList={productList}
+                navigation={navigation}
             />
             <Filtrum
                 visible={filterVisible}

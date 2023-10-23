@@ -40,7 +40,7 @@ export const ReturnScreen = ({navigation}) => {
     const [orders, setOrders] = useState([]);
     const [refresh, setRefresh] = useState(false);
     const [totalSum, setTotalSum] = useState(0);
-    
+
     function itemVisibleChanger(value){
         setItemVisible(value);
     }
@@ -50,7 +50,7 @@ export const ReturnScreen = ({navigation}) => {
 
     function finder(value){
         if (value){
-            
+
         }
     }
     const showItemModal = async (item) => {
@@ -154,7 +154,7 @@ export const ReturnScreen = ({navigation}) => {
                 console.log(unsyncOrders); */
             }
             await setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
-            
+
             /* orders = orders.sort((a, b) => {
                 var key1 = GetCorrectJSDate(a.order_date).getTime();
                 var key2 = GetCorrectJSDate(b.order_date).getTime();
@@ -165,7 +165,7 @@ export const ReturnScreen = ({navigation}) => {
                 } else {
                     return 1;
                 }
-                
+
             }) */
             /* orders = orders.filter(i => i.order_date == CorrectDate(GetDate('today')));
             console.log(orders); */
@@ -193,7 +193,7 @@ export const ReturnScreen = ({navigation}) => {
                     <Text style={styles.listHeaderTitle}>{consts.RETURNS}</Text>
                     <View style={style.searchBar}>
                     <View style={style.iconAdd}>
-                            <IconBtn 
+                            <IconBtn
                                 icon={'filter'}
                                 color={'#ff6365'}
                                 size={26}
@@ -201,17 +201,17 @@ export const ReturnScreen = ({navigation}) => {
                             />
                         </View>
                         <View style={style.search}>
-                            
+
                             <DefaultTextInput
                                 style={style.search}
                                 placeholder={consts.SEARCH}
                                 onEndEditing={finder}
                                 mt={1}
                             />
-                            
+
                         </View>
                         <View style={style.iconAdd}>
-                            <IconBtn 
+                            <IconBtn
                                 icon={'pluscircle'}
                                 color={'#ff6365'}
                                 size={26}
@@ -238,11 +238,11 @@ export const ReturnScreen = ({navigation}) => {
                 <View
                     style={style.flatList}
                 >
-                    <FlatList 
+                    <FlatList
                         style={style.flatList2}
                         extraData={refresh}
                         data={data}
-                        renderItem={({item}) =>{ 
+                        renderItem={({item}) =>{
 
                                 return(
                                 <TouchableOpacity
@@ -258,13 +258,13 @@ export const ReturnScreen = ({navigation}) => {
                                                 name={'close'}
                                                 size={16} />
                                             }
-                                            {item.client_name} 
+                                            {item.client_name}
                                         </Text>
                                         <Text style={style.itemText}>
                                             {item.amount}
                                         </Text>
                                         {item.doc_type ?
-                                            
+
                                             <View style={[style.itemText, {maxWidth: '6%'}, {alignItems: 'center'}]}>
                                                 <AntIcon
                                                     size={16}
@@ -281,7 +281,7 @@ export const ReturnScreen = ({navigation}) => {
                                                 />
                                             </View>
                                         }
-                                        
+
                                         <Text style={[style.itemText, , {maxWidth: '25%'}]}>
                                             {item.order_date}
                                         </Text>
@@ -307,6 +307,7 @@ export const ReturnScreen = ({navigation}) => {
                 item={chosenItem}
                 productList={productList}
                 returned={true}
+                navigation={navigation}
             />
             <Filtrum
                 visible={filterVisible}

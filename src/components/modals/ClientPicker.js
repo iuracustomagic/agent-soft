@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import {  Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
+
 import { DefaultBtn } from '../DefaultBtn';
 import { DefaultTextInput } from '../DefaultTextInput';
 
@@ -18,7 +18,7 @@ export const ClientPicker = ({visible, setVisible, clients, chooseClient}) => {
     }, [search])
 
     const hide = () => {
-        
+
         setVisible(false);
     }
 
@@ -29,10 +29,10 @@ export const ClientPicker = ({visible, setVisible, clients, chooseClient}) => {
 
     if (!visible)
         return null;
-        
 
-    
-    
+
+
+
     return(
         <Modal
             style={style.background}
@@ -51,7 +51,7 @@ export const ClientPicker = ({visible, setVisible, clients, chooseClient}) => {
                     keyExtractor={item => item.id}
                     ItemSeparatorComponent={separatorItem}
                     renderItem={
-                        ({item}) => 
+                        ({item}) =>
                         <TouchableOpacity
                             onPress={() => {chooseClient(item)}}
                         >
@@ -59,10 +59,10 @@ export const ClientPicker = ({visible, setVisible, clients, chooseClient}) => {
                                 {item.name}
                             </Text>
                         </TouchableOpacity>
-                        
+
                     }
                 />
-                <DefaultBtn 
+                <DefaultBtn
                     callback={hide}
                     text={consts.CLOSE}
                 />

@@ -1,23 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
-  TouchableOpacity,
   View,
-  Image,
   FlatList,
-  Modal,
   BackHandler
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { consts } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
 import { styles } from '../styles/styles';
 import { DefaultBtn } from '../components/DefaultBtn';
 import { IconBtn } from '../components/IconBtn';
@@ -32,12 +22,14 @@ import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
 import { StorePicker } from '../components/modals/StorePicker';
 import { Loading } from '../components/modals/Loading';
 import Toast from 'react-native-simple-toast';
-import { GetBalance, GetClients, GetRequests, GetReturns, SendNewRequest, SendNewReturn } from '../API/api';
+import {GetBalance, GetClients, GetRequests, GetReturns, SendNewRequest, SendNewReturn, ValidToken} from '../API/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CategoryPicker } from '../components/modals/CategoryPicker';
 import { TypeOfReturnPicker } from '../components/modals/TypesOfReturns';
 import { ClientPickerAll } from '../components/modals/ClientPickerAnotherEdition';
 import { SureModal } from '../components/modals/SureModal';
+import { NetworkContext } from '../context';
+import {openDatabase} from "expo-sqlite";
 
 export const NewReturnScreen = ({navigation}) => {
 
@@ -73,10 +65,11 @@ export const NewReturnScreen = ({navigation}) => {
     const [docType, setDocType] = useState(0);
     const [refSum, setRefSum] = useState(false);
     const [comment, setComment] = useState('');
+    const {network} = useContext(NetworkContext);
 
     function changeActive(value){
         setActiveBtn(value)
-        console.log(GetDate('tomorrow'));
+        // console.log(GetDate('tomorrow'));
     }
 
     function changer(value){
@@ -100,7 +93,7 @@ export const NewReturnScreen = ({navigation}) => {
         setSureModal(value);
     }
     function sureModalPicked(){
-        console.log(sureModalValue)
+        // console.log(sureModalValue)
         switch (sureModalValue){
             case 'send':
                 sendRequest();
@@ -168,10 +161,7 @@ export const NewReturnScreen = ({navigation}) => {
             await setClient(data);
             await setStorePickerVisible(true);
         }
-        
-        //await setClientPickerVisible(false);
-        
-        //console.log(chosenClient);
+
     }
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -183,10 +173,10 @@ export const NewReturnScreen = ({navigation}) => {
         alrdy(id, false);
     }
     async function chooseStore(store){
-        var badPrices = 0;
+
         var badPrices = 0;
         var nmcls_count = 0;
-        console.log(store)
+        // console.log(store)
         dbProducts.map(i => {
             var spt = store.price_types.find(spts => spts.organization_id == i.organization_id);
             var real_price = 0;
@@ -194,7 +184,7 @@ export const NewReturnScreen = ({navigation}) => {
                 if (i.price){
                     var pf = i.price.find(p => p.price_type_guid == spt.guid);
                     if (pf)
-                        real_price = pf.price; 
+                        real_price = pf.price;
                 }
             }
             i.real_price = real_price;
@@ -202,8 +192,7 @@ export const NewReturnScreen = ({navigation}) => {
                 badPrices++;
             nmcls_count++;
         })
-        console.log('badPrices: ' + badPrices);
-        console.log('nomenclatures count: ' + nmcls_count);
+
         products.map(i => {
             i.price = dbProducts.find(p => i.nomenclature_id == p.id).real_price
         })
@@ -242,20 +231,13 @@ export const NewReturnScreen = ({navigation}) => {
             delete dbProducts[indexProduct].pickedQty
     }
     async function sendRequest(){
-        console.log(readyClient.id)
-        console.log(products.length)
-        console.log(chosenType.guid)
+
         if (readyClient.id && products.length && chosenType.guid){
             if (products){
                 setLoading(true);
                 const token = await AsyncStorage.getItem('@token');
                 await products.map(i => {
-                    /* if (i.kg){
-                        
-                    }
-                    else{
 
-                    } */
                     i.return_type = chosenType.guid;
                 });
                 const db = await getDBConnection();
@@ -276,7 +258,7 @@ export const NewReturnScreen = ({navigation}) => {
                 }
                 var req = {};
                 Object.assign(req, reqUnsync);
-                console.log(req);
+                // console.log(req);
                 reqUnsync.client_name = readyClient.client_name;
                 reqUnsync.store_name = readyClient.name;
                 reqUnsync.order_date = CorrectDate(GetDate('today'));
@@ -286,26 +268,24 @@ export const NewReturnScreen = ({navigation}) => {
                 reqUnsync = [reqUnsync];
                 var reqU = await addNewItemsToUnsyncReturns(db, 'unsyncReturns', reqUnsync);
                 const resp = await SendNewReturn(token, req);
-                /* const resp = {
-                    "status": 'not_ok'
-                }; */
-                
-                console.log(resp);
-                if (resp.status == 'ok'){
-                    setLoading(false);
+
+                if (resp.status === 'ok'){
+                    await deleteItem(db, 'unsyncReturns', reqU);
+
                     var requests = await GetReturns(token);
                     var clientsToAdd = await getAllItems(db, 'clients');
-                    console.log(clientsToAdd)
-                    if (requests.status == 'ok'){
+                    // console.log(clientsToAdd)
+                    if (requests.status === 'ok'){
                         await createTableReturns(db, 'returns');
+
                         await requests.orders.map(i => {
-                          var client = clientsToAdd.find(c => c.id == i.client_id);
-                          //console.log
+                          var client = clientsToAdd.find(c => c.id === i.client_id);
+
                           if (client)
                             i.client_name = client.name.replace(/[']+/g, "''");
                           else
                             i.client_name = 'noname'
-                          //console.log(JSON.parse(client.stores).find(s => s.id == i.store_id))
+
                           if (client)
                             if (client.stores != 'null')
                                 if (JSON.parse(client.stores).find(s => s.id == i.store_id))
@@ -318,7 +298,7 @@ export const NewReturnScreen = ({navigation}) => {
                           i.order_date = i.created_at.substring(0, 10);
                         })
                         await addNewItemsToReturns(db, 'returns', requests.orders);
-                        await deleteItem(db, 'unsyncReturns', reqU[0].insertId);
+
                         Toast.show('Возврат успешно отправлен');
                         setLoading(false);
                         navigation.replace('ReturnScreen');
@@ -327,7 +307,7 @@ export const NewReturnScreen = ({navigation}) => {
                         return false
                 }
                 else{
-                    
+
                     Toast.show('Заявка сохранена на устройстве');
                     setLoading(false);
                     //navigation.navigate('ReturnScreen');
@@ -340,33 +320,109 @@ export const NewReturnScreen = ({navigation}) => {
             Toast.show('Не выбраны клиент,товары или причина');
     }
     useEffect(() => {
+        const db = openDatabase('db.db' );
+
         async function getDataFromDB(){
             const token = await AsyncStorage.getItem('@token');
-            //const balances = await GetBalance(token);
-            const balances = {
-                "status": 'not_ok'
+            try {
+                const validToken = await ValidToken(token)
+
+                if(validToken.data === 'Token is valid') {
+                    const balances = {
+                        "status": 'not_ok'
+                    }
+
+                    const productsToAdd = await getAllItems(db, 'nomenclatures');
+                    productsToAdd.map(i => {
+                        i.price = JSON.parse(i.price);
+                        i.balance = JSON.parse(i.balance);
+                    })
+                    const clientsToAdd = await getAllItems(db, 'clients');
+                    const categories = await getAllItems(db, 'categories');
+                    const suppliers = await getAllItems(db, 'suppliers');
+                    const typesToAdd = await getAllItems(db, 'typesOfReturns');
+
+                    setCategories(categories);
+                    if (balances.status == 'ok')
+                        productsToAdd.map(i => {
+                            i.balance = balances.balance.filter(b => b.nomenclature_id == i.id);
+                        })
+                    setDBProducts(productsToAdd);
+                    setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
+                    setTypes(typesToAdd);
+                    // console.log(typesToAdd);
+                    var storesToAdd = [];
+                    await clientsToAdd.map(i => {
+                        if (i.stores.length && i.stores != 'null'){
+                            i.stores = JSON.parse(i.stores);
+                            i.statuses = JSON.parse(i.statuses);
+                            var blockedSups = [];
+                            if (i.statuses != null && i.statuses != 'null'){
+                                var blocked = false;
+                                if (i.statuses.find(s => s.blocked == 1))
+                                    blocked = true;
+                                i.statuses.map(s => {
+                                    if (s.blocked == 1)
+                                        blockedSups.push({
+                                            "id": s.organization_id
+                                        })
+                                })
+                            }
+                            i.stores.map(l => {
+                                l.client_guid = i.guid;
+                                l.client_name = i.name;
+                                l.debt = i.total_debt;
+                                if (blockedSups.length)
+                                    l.blockedSups = blockedSups;
+                                if (blocked)
+                                    l.blocked = true;
+                                else
+                                    l.blocked = false;
+                                storesToAdd.push(l);
+                            })
+                        }
+                    })
+                    await setStores(storesToAdd);
+
+                    suppliers.map(i => {
+                        i.cats = [];
+                        i.visible = false;
+                    })
+
+                    categories.map(i => {
+                        suppliers.find(e => e.id == i.sup_id).cats.push(i)
+                        //suppliers.cats.push(i)
+                    })
+                    // console.log(suppliers);
+                    setModdedCategories(suppliers);
+
+
+                } else {
+                    navigation.navigate('Login')
+                }
+            } catch (e) {
+                navigation.navigate('Login')
             }
-            const db = await getDBConnection();
+
+        }
+
+        async function getDataWithoutNetwork() {
             const productsToAdd = await getAllItems(db, 'nomenclatures');
             productsToAdd.map(i => {
                 i.price = JSON.parse(i.price);
                 i.balance = JSON.parse(i.balance);
             })
             const clientsToAdd = await getAllItems(db, 'clients');
-            var categories = await getAllItems(db, 'categories');
-            var suppliers = await getAllItems(db, 'suppliers');
-            var typesToAdd = await getAllItems(db, 'typesOfReturns');
-            
+            const categories = await getAllItems(db, 'categories');
+            const suppliers = await getAllItems(db, 'suppliers');
+            const typesToAdd = await getAllItems(db, 'typesOfReturns');
+
             setCategories(categories);
-            if (balances.status == 'ok')
-                productsToAdd.map(i => {
-                    i.balance = balances.balance.filter(b => b.nomenclature_id == i.id);
-                })
             setDBProducts(productsToAdd);
             setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
             setTypes(typesToAdd);
-            console.log(typesToAdd);
-            var storesToAdd = [];
+            // console.log(typesToAdd);
+            let storesToAdd = [];
             await clientsToAdd.map(i => {
                 if (i.stores.length && i.stores != 'null'){
                     i.stores = JSON.parse(i.stores);
@@ -408,38 +464,20 @@ export const NewReturnScreen = ({navigation}) => {
                 suppliers.find(e => e.id == i.sup_id).cats.push(i)
                 //suppliers.cats.push(i)
             })
-            console.log(suppliers);
+            // console.log(suppliers);
             setModdedCategories(suppliers);
         }
-        //console.log(dbProducts)
-        getDataFromDB()
+        if(network) {
+            getDataFromDB()
+        } else {
+            getDataWithoutNetwork()
+
+        }
     }, []);
 
     return(
         <View style={{height: '100%'}}>
             <View style={styles.listContainer}>
-               {/*  <View style={style.listHeader}>
-                    <View style={style.searchBar}>
-                        <TouchableOpacity
-                            style={[style.btn, activeBtn == 1 ? {backgroundColor: '#ff6365'} : {backgroundColor: 'white'}]}
-                            onPress={() => changeActive(1)}
-                        >
-                            <Text style={[style.btnText, activeBtn == 1 ? {color: 'white'} : {color: 'black'}]}>
-                                {consts.CLIENT}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[style.btn, activeBtn == 2 ? {backgroundColor: '#ff6365'} : {backgroundColor: 'white'}]}
-                            onPress={() => changeActive(2)}
-                        >
-                            <Text style={[style.btnText, activeBtn == 2 ? {color: 'white'} : {color: 'black'}]}>
-                                {consts.PRODUCT}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View> */}
-
-                
 
                         <FlatList
                             ListHeaderComponent={
@@ -499,7 +537,7 @@ export const NewReturnScreen = ({navigation}) => {
                                             callback={() => categoryPickerVisibility(true)}
                                         />
 
-                                        
+
                                     </View>
                                 </View>
                             }
@@ -508,7 +546,7 @@ export const NewReturnScreen = ({navigation}) => {
                             keyExtractor={item => item.nomenclature_id}
                             ItemSeparatorComponent={separatorItem}
                             renderItem={
-                                ({item}) => { //console.log(item)
+                                ({item}) => {
                                     return(
                                         <View style={style.productListRow}>
                                             <View>
@@ -519,18 +557,18 @@ export const NewReturnScreen = ({navigation}) => {
                                                     Кол-во: <Text style={style.productQty}>{item.quantity}</Text> Цена: <Text style={style.productQty}>{item.price}</Text>
                                                 </Text>
                                             </View>
-                                            <IconBtn 
+                                            <IconBtn
                                                 callback ={() => removeProduct(item.nomenclature_id)}
                                                 size={28}
                                                 color='red'
                                                 fa5Icon='trash-alt'
                                             />
                                         </View>
-                                        
+
                                     )
                                 }
                             }
-                            
+
 
 
 
@@ -542,7 +580,7 @@ export const NewReturnScreen = ({navigation}) => {
                                             Сумма: {totalSum}
                                         </Text>
                                     </View>
-                                    
+
                                     <View style={style.listFooter}>
                                         <DefaultBtn
                                             text={consts.BACK}
@@ -562,7 +600,7 @@ export const NewReturnScreen = ({navigation}) => {
                         />
 
 
-                
+
             </View>
             <CategoryPicker
                 setVisible={categoryPickerVisibility}
@@ -592,7 +630,7 @@ export const NewReturnScreen = ({navigation}) => {
                 visible={clientPickerVisible}
                 clients={dbClients}
                 chooseClient={chosenClientHandler}
-            /> 
+            />
             <StorePicker
                 setVisible={storePickerVisibility}
                 visible={storePickerVisible}

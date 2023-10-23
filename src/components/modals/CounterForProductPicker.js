@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import React, { useState, useRef} from 'react';
+import {  Modal, StyleSheet, View } from 'react-native';
+
 import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
-import { DefaultBtn } from '../DefaultBtn';
+
 import { DefaultTextInput } from '../DefaultTextInput';
 import { IconBtn } from '../IconBtn';
 import { RestBtn } from '../RestBtn';
@@ -18,13 +16,7 @@ export const CounterForProductPicker = ({visible, setVisible, callback, product}
     const ref = useRef();
     const [text, setText] = useState('Количество');
 
-    //console.log(ref)
 
-    /* useEffect(() => {
-        console.log(ref)
-        if (ref.current)
-            ref.current.focus();
-    }, [ref]); */
 
     async function onShow(){
         if (product.unit == 'kg.' || product.unit == 'kg')
@@ -51,19 +43,22 @@ export const CounterForProductPicker = ({visible, setVisible, callback, product}
 
     const countHandler = () => {
         if (count > 0){
-            console.log('count: ' + count)
+            // console.log('count: ' + count)
             var lastCount = count;
             if (product.unit == 'kg.' || product.unit == '1' || product.unit == 'kg'){
-                lastCount = lastCount.replace(',', '.');
+                // console.log('lastCount', lastCount)
+                // if(lastCount) {
+                //     lastCount = lastCount.replace(',', '.');
+                // }
                 lastCount = parseFloat(lastCount);
             }
             else
                 lastCount = parseInt(count)
-    
+
             if (lastCount > 0){
-                console.log(product)
-                
-                    
+                // console.log(product)
+
+
                 const productToAdd = {
                     "nomenclature_id": product.id,
                     "nomenclature_guid": product.guid,
@@ -82,8 +77,8 @@ export const CounterForProductPicker = ({visible, setVisible, callback, product}
     if (!visible)
         return null;
 
-    
-    
+
+
     return(
         <Modal
             onShow={onShow}
@@ -98,7 +93,7 @@ export const CounterForProductPicker = ({visible, setVisible, callback, product}
                     >
                         <Pressable>
                             <View style={style.modalContainer}>
-                                
+
                                 <View style={style.inputRow}>
                                     <IconBtn
                                         callback={decrease}
@@ -125,7 +120,7 @@ export const CounterForProductPicker = ({visible, setVisible, callback, product}
                                         mt={20}
                                     />
                                 </View>
-                                
+
 
                                 <View style={style.btnsRow}>
                                     <RestBtn
@@ -146,7 +141,7 @@ export const CounterForProductPicker = ({visible, setVisible, callback, product}
                         </Pressable>
                     </Pressable>
                 </View>
-            
+
         </Modal>
     )
 }

@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity, ToastAndroid } from 'react-native';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import {  Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
-import { DefaultBtn } from '../DefaultBtn';
-import { DefaultTextInput } from '../DefaultTextInput';
+
 import { IconBtn } from '../IconBtn';
 import Toast from 'react-native-simple-toast';
 import { RestBtn } from '../RestBtn';
@@ -24,13 +22,13 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
         if (search){
             setClearBtn(true)
             var newAr = products ? categories.concat(products) : categories;
-            console.log(products);
-            console.log(newAr.filter(i => i.name.toLowerCase().includes(search.toLocaleLowerCase())));
+            // console.log(products);
+            // console.log(newAr.filter(i => i.name.toLowerCase().includes(search.toLocaleLowerCase())));
             return newAr.filter(i => i.name.toLowerCase().includes(search.toLocaleLowerCase()))
         }
         else
             setClearBtn(false)
-            
+
     }, [search])
 
 
@@ -58,7 +56,7 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
 
     if (!visible)
         return null;
-    
+
     return(
         <Modal
             style={style.background}
@@ -99,7 +97,7 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                             return(
                                 <View>
                                     {
-                                        
+
                                         !item.visible ?
                                         //if filtered (using search)
                                             !item.organization_id ?
@@ -113,7 +111,7 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                                                     else{
                                                         chosenCategory(item.id)
                                                     }
-                                                    
+
                                                 }}
                                             >
                                                 <Text style={[style.title, filtered && {fontSize: 22}, item.already && style.alreadyChosen, item.blocked && {color: '#ff6365'}]}>
@@ -121,14 +119,14 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                                                 </Text>
                                             </TouchableOpacity>
                                             :
-                                            
+
                                             <TouchableOpacity
                                                 onPress={() => {
                                                     if (item.real_price != 0)
                                                         chooseProduct(item);
                                                     else
                                                         Toast.show('Невозможно добавить товар без цены. Обратитесь к менеджеру.')
-                                                        
+
                                                 }}
                                                 style={[style.item, style.singleItem, item.color != 'null' && item.color != 'Default' && {backgroundColor: item.color.toLowerCase()}]}
                                             >
@@ -136,14 +134,7 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                                                     <Text style={[style.text, item.already && style.alreadyChosen]}>
                                                         {item.name}
                                                     </Text>
-                                                    {
-                                                        /* item.color != 'null' &&
-                                                            item.color != 'Default' ?
-                                                                <View style={[style.colored,  {backgroundColor: item.color.toLowerCase()}]}></View>
-                                                                :
-                                                                <></> */
-                                                    }
-                                                    
+
                                                 </View>
                                                 <View style={style.info}>
                                                     <Text style={[style.text, item.already && style.alreadyChosen]}>
@@ -154,7 +145,7 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                                                         <View style={style.added}>
                                                             <Text style={[style.text, item.already && style.alreadyChosen]}>
                                                             Добавлено: {item.pickedQty}
-                                                        
+
                                                             </Text>
                                                             <IconBtn
                                                                 icon='close'
@@ -166,7 +157,7 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                                                                 }}
                                                             />
                                                         </View>
-                                                        
+
                                                     }
                                                 </View>
                                             </TouchableOpacity>
@@ -198,8 +189,8 @@ export const CategoryPicker = ({visible, setVisible, suppliers, categories, chos
                                 </View>
                             )
                         }
-                        
-                        
+
+
                     }
                 />
                 <RestBtn
@@ -263,9 +254,7 @@ const style = StyleSheet.create({
         fontSize: 22,
         color: 'black'
     },
-    alreadyChosen: {
-        color: '#5D9BD2'
-    },
+
     searchbar: {
         position: 'relative',
         marginBottom: 5,

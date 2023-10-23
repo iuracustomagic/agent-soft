@@ -1,21 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useContext, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import Modal from 'react-native-modal';
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
-import { GetNomenclatures, GetClients, GetSuppliers, GetCategories, PreSync, GetRequests, GetTypesOfReturns, GetReturns, GetCashOrders } from '../../API/api';
+import {  SendUnsyncRequest, ValidToken } from '../../API/api';
 import { consts } from '../../consts/const';
-import {addNewItemsToCategories, addNewItemsToClients, addNewItemsToNomenclatures, addNewItemsToPKO, addNewItemsToRequests, addNewItemsToReturns, addNewItemsToSuppliers, addNewItemsToTypesOfReturns, clearTable, createTableCategories, createTableClients, createTableNomenclatures, createTablePKO, createTableRequests, createTableReturns, createTableSuppliers, createTableTypesOfReturns, createTableUnsyncPKO, createTableUnsyncRequests, createTableUnsyncReturns, deleteTable, getAllItems, getDBConnection} from '../../db/db';
-import Toast from 'react-native-simple-toast';
-import { NavigationContainer, useNavigationContainerRef, useNavigation } from '@react-navigation/native';
+import { getAllItems, getDBConnection} from '../../db/db';
+
+import {  useNavigation } from '@react-navigation/native';
 import { SyncOrders, SyncPKO, SyncReturns } from '../../utils/Helper';
 import { RefresherContext } from '../../context';
-
+import updater from "../../utils/updater";
+import {Loading} from "./Loading";
+import loginHandler from "../../utils/login";
+import {Auth} from "../../API/auth";
+import Toast from "react-native-simple-toast";
 
 export const LeftSideMenu = ({visible, opener, navigation}) => {
 
     const {refresher, setRefresher} = useContext(RefresherContext);
     const [name, setName] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const navig = useNavigation();
     //navig.navigate('RequestScreen')
@@ -25,241 +30,76 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
         closer();
     }
 
-    async function updater(){  
-        const token = await AsyncStorage.getItem('@token');
-        var preSync = await PreSync(token);
-        if (preSync.status == 'ok'){
-          Toast.show('Выполняется синхронизация. Это может занять некоторое время.');
-          var nomenclaturesToAdd = await GetNomenclatures(token);
-          var clientsToAdd = await GetClients(token);
-          console.log(clientsToAdd.clients);
-          const db = await getDBConnection();
-          
-          var suppliers = await GetSuppliers(token);
-          var categories = await GetCategories(token);
-          var requests = await GetRequests(token);
-          var typesOfReturns = await GetTypesOfReturns(token);
-          var returns = await GetReturns(token);
-          var pkos = await GetCashOrders(token);
-          await createTableTypesOfReturns(db, 'typesOfReturns');
-          await createTableUnsyncRequests(db, 'unsyncReqs');
-          await createTableUnsyncReturns(db, 'unsyncReturns');
-          await createTableUnsyncPKO(db, 'unsyncPKO');
-          /* await deleteTable(db, 'nomenclatures');
-          await deleteTable(db, 'clients');
-          await deleteTable(db, 'unsyncReqs');
-          await deleteTable(db, 'requests');
-          await deleteTable(db, 'returns');
-          await deleteTable(db, 'unsyncReturns');
-          await deleteTable(db, 'unsyncPKO');
-          await deleteTable(db, 'pko'); */
-          if (typesOfReturns.status == 'ok'){
-            await clearTable(db, 'typesOfReturns')
-            if (typesOfReturns.types.length){
-              await addNewItemsToTypesOfReturns(db, 'typesOfReturns', typesOfReturns.types);
-            }
-          }
-          if (suppliers.status == 'ok'){
-              await createTableSuppliers(db, 'suppliers');
-              await clearTable(db, 'suppliers');
-              if (suppliers.suppliers.length){
-                await addNewItemsToSuppliers(db, 'suppliers', suppliers.suppliers);
-              }
-              Toast.show('Поставщики добавлены');
-          }
-          else
-            return false
-          
-            
-          if (nomenclaturesToAdd.status == 'ok'){
-              //Toast.show('Status ok');
-              await createTableNomenclatures(db, 'nomenclatures');
-              await clearTable(db, 'nomenclatures');
-              console.log(nomenclaturesToAdd.nomenclature)
-              var flagCat = false;
-              if (categories.status == 'ok')
-                  flagCat = true
-              //Toast.show('Table created');
-              if (categories.categories.length){
-                await nomenclaturesToAdd.nomenclature.map((i) => {
-                    if (i.balance == '')
-                        i.balance = 'null';
-                    else
-                        i.balance = JSON.stringify(i.balance);
-                    if (i.name.indexOf("'") != -1){
-                        //i.name = i.name.replaceAll("/'", "/'/'");
-                        i.name = i.name.replace(/[']+/g, "''");
-                    }
-                    if (flagCat)
-                        categories.categories.find(c => c.id == i.category_id).sup_id = i.organization_id;
-                    if (i.prices == '')
-                        i.prices = 'null';
-                    else
-                        i.prices = JSON.stringify(i.prices);
-                })
-                //Toast.show('nomenclatures map3');
-                await addNewItemsToNomenclatures(db, 'nomenclatures', nomenclaturesToAdd.nomenclature);
-                //Toast.show('nomenclatures added');
-                //console.log(getAllItems(db, 'nomenclatures'));
-                Toast.show('Номенклатуры добавлены');
-              }
-              if (categories.status == 'ok'){
-                  await createTableCategories(db, 'categories');
-                  await clearTable(db, 'categories');
-                  if (categories.categories.length){
-                    categories.categories.map(i => {
-                        if (i.name.indexOf("'") != -1){
-                            i.name = i.name.replace(/[']+/g, "''");
-                        }
-                    })
-                    console.log(categories.categories);
-                    await addNewItemsToCategories(db, 'categories', categories.categories);
-                    Toast.show('Категории добавлены');
-                  }
-              }
-              else
-                return false
-              
-              
-          }
-          else
-            return false
-          if (clientsToAdd.status == 'ok'){
-              //console.log(Object.keys(clientsToAdd.clients[0]).join(", "))
-              await createTableClients(db, 'clients');
-              await clearTable(db, 'clients');
-              if (clientsToAdd.clients.length){
-                clientsToAdd.clients.map(i => {
-                    if (i.statuses == '')
-                        i.statuses = 'null';
-                    else
-                        i.statuses = JSON.stringify(i.statuses);
-                    if (i.stores == '')
-                        i.stores = 'null';
-                    else
-                        i.stores = JSON.stringify(i.stores);
-                    //i.name = i.name.replaceAll("'", "''");
-                })
-                await addNewItemsToClients(db, 'clients', clientsToAdd.clients);
-                //console.log(getAllItems(db, 'clients'));
-                Toast.show('Контрагенты добавлены');
-              }
-          }
-          else
-            return false
-    
-          if (returns.status == 'ok'){
-            await createTableReturns(db, 'returns');
-            await clearTable(db, 'returns');
-    
-            if (returns.orders.length){
-              await returns.orders.map(i => {
-                var client = clientsToAdd.clients.find(c => c.id == i.client_id);
-                //console.log
-                if (client)
-                    i.client_name = client.name.replace(/[']+/g, "''");
-                else
-                    i.client_name = 'noname'
-                //console.log(JSON.parse(client.stores).find(s => s.id == i.store_id))
-                if (client)
-                    if (client.stores != 'null')
-                        if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                            i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
-                        else
-                            i.store_name = 'null';
-                else
-                    i.store_name = 'null'
-                i.list = i.list.replace(/[']+/g, "''");
-                
-                i.order_date = i.created_at.substring(0, 10);
-              })
-              console.log(returns.orders)
-              await addNewItemsToReturns(db, 'returns', returns.orders);
-            }
-          }
-          else
-            return false
-    
-          if (pkos.status == 'ok'){
-            await createTablePKO(db, 'pko');
-            await clearTable(db, 'pko');
-    
-            if (pkos.cash_order_receipts.length){
-              await pkos.cash_order_receipts.map(i => {
-                var client = clientsToAdd.clients.find(c => c.id == i.client_id);
-                var supplier = suppliers.suppliers.find(s => s.id == i.organization_id);
-                if (client)
-                    i.client_name = client.name.replace(/[']+/g, "''");
-                else
-                    i.client_name = 'noname'
-                if (client)
-                    if (client.stores != 'null')
-                      if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                        i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
-                      else
-                        i.store_name = 'null';
-                  else
-                    i.store_name = 'null'
-                i.supplier_name = supplier.name;
-                i.supplier_id = supplier.id;
-                i.supplier_guid = supplier.guid;
-                i.order_date = i.created_at.substring(0, 10);
-                i.comment = i.comment.replace(/[']+/g, "''");
-              })
-              console.log(pkos.cash_order_receipts)
-              await addNewItemsToPKO(db, 'pko', pkos.cash_order_receipts);
-            }
-          }
-          else
-            return false
-    
-          if (requests.status == 'ok'){
-            await createTableRequests(db, 'requests');
-            //await clearTable(db, 'requests');
-            if (requests.orders.length){
-              await requests.orders.map(i => {
-                var client = clientsToAdd.clients.find(c => c.id == i.client_id);
-                //console.log
-                if (client)
-                    i.client_name = client.name.replace(/[']+/g, "''");
-                else
-                    i.client_name = 'noname'
-                //console.log(JSON.parse(client.stores).find(s => s.id == i.store_id))
-                if (client)
-                    if (client.stores != 'null')
-                        if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                            i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
-                        else
-                            i.store_name = 'null';
-                else
-                    i.store_name = 'null'
-                i.list = i.list.replace(/[']+/g, "''");
-                i.order_date = i.created_at.substring(0, 10);
-              })
-              await addNewItemsToRequests(db, 'requests', requests.orders);
-              console.log(requests)
-              Toast.show('Заявки добавлены');
-            }
-          }
-          else
-            return false
-          //const items = await getAllItems(db, 'nomenclatures')
-          //console.log(items);
-          return true;
-        }
-      }
-
     const closer = () => {
         opener(false);
     }
 
-    const send = () => {
+    const updateHandler = async()=> {
+        setLoading(true);
+        try {
+            const login1 = await AsyncStorage.getItem('@login');
+            const pass1 = await AsyncStorage.getItem('@pass');
+            const token = await AsyncStorage.getItem('@token');
+            if (login1 && pass1){
+                const validToken = await ValidToken(token)
+
+                    if(validToken.data === 'Token is valid') {
+                    console.log('ValidToken')
+
+                } else {
+                    const tryAuth = await Auth(login1, pass1);
+                    if (tryAuth.status === 'ok') {
+                        await AsyncStorage.setItem('@token', tryAuth.token);
+                    }else
+                        Toast.show('Проблема при авторизации');
+                }
+
+                console.log('token', token)
+
+                    if (await updater())
+                        Toast.show('Данные обновились');
+                    else
+                        Toast.show('Что-то пошло не так...');
+                }
+                else
+                    Toast.show('Проблема при авторизации');
+
+
+        } catch (e) {
+            console.log(e)
+            navigation.navigate('Login')
+        }finally {
+            setLoading(false);
+        }
+    }
+    const send = async() => {
         if (SyncOrders())
             setRefresher(!refresher)
         if (SyncReturns())
             setRefresher(!refresher)
         if (SyncPKO())
             setRefresher(!refresher)
+        const db = await getDBConnection();
+        const token = await AsyncStorage.getItem('@token');
+        let orders = await getAllItems(db, 'requests');
+        // console.log('orders', orders)
+       const unsyncOrders = orders.filter(order=>order.sync_status === 0)
+
+        if(unsyncOrders) {
+            await unsyncOrders.map((i) => {
+                i.list = JSON.parse(i.list)
+            })
+            for(let i=0; i < unsyncOrders.length; i++ ) {
+                const value = unsyncOrders[i];
+
+                const data = {order_id: value.id}
+                await SendUnsyncRequest(token, data)
+            }
+
+
+        }
+        Toast.show('Заявки отправлены');
+        closer()
     }
 
     const onShow = async () => {
@@ -277,7 +117,7 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
             setName();
         }
     }
-    
+
     return(
         <Modal
             onShow={onShow}
@@ -293,7 +133,7 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
                 <View style={style.background}>
                     <View style={style.top2}>
                         <View style={style.top1}>
-                            <View style={style.userSec}>  
+                            <View style={style.userSec}>
                                 <View style={style.userAvatar}>
                                     <FontAwesome5
                                         size={60}
@@ -325,7 +165,7 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
                                 onPress={() => doNavigation('RequestScreen')}
                                 style={style.liBtn}
                             >
-                                <Text style={style.liText}>{consts.REQUEST}</Text>
+                                <Text style={style.liText}>{consts.REQUESTS}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => doNavigation('PKOScreen')}
@@ -336,7 +176,7 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
 
 
                             <TouchableOpacity
-                                onPress={() => updater()}
+                                onPress={() => updateHandler()}
                                 style={style.liBtn}
                             >
                                 <Text style={style.liText}>Обновление</Text>
@@ -347,11 +187,11 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
                             >
                                 <Text style={style.liText}>Отправить</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={style.liBtn}
-                            >
-                                <Text style={style.liText}>{consts.OPTIONS}</Text>
-                            </TouchableOpacity>
+                            {/*<TouchableOpacity*/}
+                            {/*    style={style.liBtn}*/}
+                            {/*>*/}
+                            {/*    <Text style={style.liText}>{consts.OPTIONS}</Text>*/}
+                            {/*</TouchableOpacity>*/}
                             <TouchableOpacity
                                 onPress={async () => {
                                     await AsyncStorage.removeItem('@login');
@@ -364,17 +204,15 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
                                 <Text style={style.liText}>{consts.LOGOUT}</Text>
                             </TouchableOpacity>
                         </View>
-                        {/* <View style={style.bottomList}>
-                            
-                        </View> */}
+                        <Loading visible={loading} text='Синхронизация'/>
                     </View>
                 </View>
-                    
-                
+
+
             }
         >
-            
-        
+
+
         </Modal>
     )
 }

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import React from 'react';
+import {  Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
+
 import { DefaultBtn } from '../DefaultBtn';
-import { DefaultTextInput } from '../DefaultTextInput';
+
 
 
 
@@ -19,8 +19,8 @@ export const StorePicker = ({visible, setVisible, stores, chooseStore}) => {
     if (!visible)
         return null;
 
-    
-    
+
+
     return(
         <Modal
             style={style.background}
@@ -46,10 +46,10 @@ export const StorePicker = ({visible, setVisible, stores, chooseStore}) => {
                                 {item.name}
                             </Text>
                         </TouchableOpacity>
-                        
+
                     }
                 />
-                <DefaultBtn 
+                <DefaultBtn
                     callback={hide}
                     text={consts.BACK}
                 />

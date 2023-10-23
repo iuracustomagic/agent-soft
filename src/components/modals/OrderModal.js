@@ -8,16 +8,25 @@ import { DefaultTextInput } from '../DefaultTextInput';
 
 
 
-export const OrderModal = ({visible, setVisible, item, productList, pko, returned}) => {
+export const OrderModal = ({visible, setVisible, item, productList, pko, returned,  navigation}) => {
 
-    
+
 
     const hide = () => {
         //console.log(list1)
         setVisible(false);
     }
 
-
+const copy = () =>{
+        hide()
+    if(pko) {
+        console.log('pko',pko)
+        console.log('item',item)
+        navigation.navigate('CopyPkoScreen', item);
+    } else {
+        navigation.navigate('CopyRequestScreen', item);
+    }
+}
 
     if (!visible)
         return null;
@@ -31,19 +40,26 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
             //onShow={onShow}
         >
             <View style={[style.center, style.background]}>
+                <TouchableOpacity style={style.copyContainer} onPress={copy}>
+                    <AntIcon
+                        size={55}
+                        name='copy1'
+                        color='black'
+                    />
+                </TouchableOpacity>
                 <Text style={style.orgName}>Клиент: {item.client_name}</Text>
                 <Text style={style.storeName}>{item.store_name}</Text>
                 {pko &&
-                    <Text style={style.orgName}>Поставщик: {item.supplier_name}</Text>
+                <Text style={style.orgName}>Поставщик: {item.supplier_name}</Text>
                 }
                 <Text style={style.dateSum}>Дата заявки: {item.order_date}</Text>
                 {!pko && <Text style={style.dateSum}>Дата доставки: {item.delivery_date}</Text>}
-                
+
                 <Text style={style.dateSum}>{pko ? 'Сумма' : 'Стоимость'}: {item.amount}</Text>
                 {
                     item.comment.length ?
                         <Text style={style.dateSum}>Комментарий: {item.comment}</Text>
-                    :
+                        :
                         <></>
                 }
                 {/* "check_required": checkRequired, // 0 или 1
@@ -60,7 +76,7 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
                                 color='green'
                             />
                         </Text>
-                    :
+                        :
                         <></>
                 }
                 {
@@ -72,7 +88,7 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
                                 color='green'
                             />
                         </Text>
-                    :
+                        :
                         <></>
                 }
                 {
@@ -84,7 +100,7 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
                                 color='green'
                             />
                         </Text>
-                    :
+                        :
                         <></>
                 }
                 {
@@ -96,7 +112,7 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
                                 color='green'
                             />
                         </Text>
-                    :
+                        :
                         <></>
                 }
                 {/* {
@@ -104,7 +120,7 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
                     <Text style={style.dateSum}>Причина: {item.list[0].return_type}</Text>
                 } */}
                 {/* <Text style={[style.dateSum, style.unsync]}>
-                    Заявка сохранена на устройстве, но не отправлена на сервер. 
+                    Заявка сохранена на устройстве, но не отправлена на сервер.
                     При подключении к интернету, она будет синхронизирована.
                 </Text> */}
                 <FlatList
@@ -128,7 +144,7 @@ export const OrderModal = ({visible, setVisible, item, productList, pko, returne
                         }
                     }
                 />
-                <DefaultBtn 
+                <DefaultBtn
                     callback={hide}
                     text={consts.CLOSE}
                 />
@@ -147,9 +163,12 @@ const separatorItem = () => {
 const style = StyleSheet.create({
     background: {
         flex: 1,
+        position: 'relative',
         justifyContent: 'space-between',
         height: '100%',
-        width: '100%'
+        width: '100%',
+        paddingTop: 10,
+        paddingHorizontal: 10
     },
     separator: {
         borderBottomColor: '#c8c8c8',
@@ -174,6 +193,7 @@ const style = StyleSheet.create({
         textDecorationLine: 'underline'
     },
     storeName: {
+        width: '85%',
         fontSize: 18,
         color: 'black'
     },
@@ -188,5 +208,10 @@ const style = StyleSheet.create({
     },
     unsync: {
         color: '#ff6365',
+    },
+    copyContainer: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
     }
 })

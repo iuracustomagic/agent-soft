@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
-import AntIcon from "react-native-vector-icons/AntDesign";
+import {  Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
-import { DefaultBtn } from '../DefaultBtn';
-import { DefaultTextInput } from '../DefaultTextInput';
+
 import { IconBtn } from '../IconBtn';
 import Toast from 'react-native-simple-toast';
 import { RestBtn } from '../RestBtn';
@@ -28,7 +26,7 @@ export const ProductPicker = ({visible, setVisible, products, chooseProduct, rem
         }
         else
             setClearBtn(false)
-            
+
     }, [search])
 
     const hide = () => {
@@ -50,8 +48,8 @@ export const ProductPicker = ({visible, setVisible, products, chooseProduct, rem
         return sum;
     }
 
-    
-    
+
+
     return(
         <Modal
             style={style.background}
@@ -95,10 +93,10 @@ export const ProductPicker = ({visible, setVisible, products, chooseProduct, rem
                                         if (item.real_price != 0)
                                             chooseProduct(item);
                                         else{
-                                            console.log(item)
+
                                             Toast.show('Невозможно добавить товар без цены. Обратитесь к менеджеру.')
                                         }
-                                            
+
                                     }}
                                     style={[style.item, style.singleItem, item.color != 'null' && item.color != 'Default' && {backgroundColor: item.color.toLowerCase()}]}
                                 >
@@ -106,16 +104,9 @@ export const ProductPicker = ({visible, setVisible, products, chooseProduct, rem
                                         <Text style={[style.text, item.already && style.alreadyChosen]}>
                                             {item.name}
                                         </Text>
-                                        {/* {
-                                            item.color != 'null' &&
-                                                item.color != 'Default' ?
-                                                    <View style={[style.colored,  {backgroundColor: item.color.toLowerCase()}]}></View>
-                                                    :
-                                                    <></>
-                                        } */}
-                                        
+
                                     </View>
-                                    
+
                                     <View style={style.info}>
                                         <Text style={[style.text, item.already && style.alreadyChosen]}>
                                             Цена: {item.real_price} Кол-во: {qty}
@@ -125,7 +116,7 @@ export const ProductPicker = ({visible, setVisible, products, chooseProduct, rem
                                             <View style={style.added}>
                                                 <Text style={[style.text, item.already && style.alreadyChosen]}>
                                                 Добавлено: {item.pickedQty}
-                                               
+
                                                 </Text>
                                                 <IconBtn
                                                     icon='close'
@@ -137,14 +128,14 @@ export const ProductPicker = ({visible, setVisible, products, chooseProduct, rem
                                                     }}
                                                 />
                                             </View>
-                                            
+
                                         }
                                     </View>
                                 </TouchableOpacity>
                             )
                         }
-                        
-                        
+
+
                     }
                 />
                 <RestBtn

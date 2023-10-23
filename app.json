@@ -1,4 +1,12 @@
 {
-  "name": "MerchManager",
-  "displayName": "MerchManager"
+  "name": "agent-soft",
+  "displayName": "agent-soft",
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "5365dc34-0210-4cfa-adbe-3f814999d3f9"
+      }
+    },
+    "slug": "agent-soft"
+  }
 }

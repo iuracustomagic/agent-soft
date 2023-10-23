@@ -31,7 +31,8 @@ export const consts = {
 }
 
 export const url = {
-    DEV: 'https://manager1c.garm.run',
+    // DEV: 'https://manager1c.garm.run',
+    DEV: 'http://127.0.0.1:8000',
     PROD: 'https://agent.agg.md'
 }
 
