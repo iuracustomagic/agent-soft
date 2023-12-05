@@ -30,7 +30,7 @@ export const createTableClients = async (db, tname) => {
     const query = `CREATE TABLE IF NOT EXISTS ${tname}
                    (
                        id                INTEGER PRIMARY KEY,
-                       guid,
+                       guid TEXT,
                        name              VARCHAR(255),
                        idno                   NULL,
                        juridical_address TEXT NULL,
@@ -90,11 +90,12 @@ export const createTableRequests = async (db, tname) => {
                        amount        INTEGER,
                        list          TEXT,
                        sync_status   INTEGER,
-                       check_required,
+                       check_required INTEGER,
                        doc_type      TINYINT,
+                       doc_number    INTEGER,
                        exported      TINYINT,
-                       print_cert,
-                       promo,
+                       print_cert INTEGER,
+                       promo INTEGER,
                        comment       TEXT
                    );`;
     await db.transaction(tx => {
@@ -106,22 +107,23 @@ export const createTableUnsyncRequests = async (db, tname) => {
     const query = `CREATE TABLE IF NOT EXISTS ${tname}
                    (
                        id          INTEGER PRIMARY KEY,
-                       client_id,
+                       client_id INTEGER,
                        client_guid TEXT,
                        client_name TEXT,
-                       store_id,
+                       store_id INTEGER,
                        store_guid  TEXT,
                        store_name  TEXT,
-                       order_date,
-                       delivery_date,
-                       amount,
-                       list,
-                       sync_status,
-                       check_required,
-                       doc_type,
-                       exported,
-                       print_cert,
-                       promo,
+                       order_date DATE,
+                       delivery_date DATE,
+                       amount INTEGER,
+                       list TEXT,
+                       sync_status INTEGER,
+                       check_required INTEGER,
+                       doc_type INTEGER,
+                       doc_number INTEGER,
+                       exported INTEGER,
+                       print_cert INTEGER,
+                       promo INTEGER,                      
                        comment     TEXT
                    );`;
     await db.transaction(tx => {
@@ -170,13 +172,15 @@ export const createTableUnsyncReturns = async (db, tname) => {
     // create table if not exists
     const query = `CREATE TABLE IF NOT EXISTS ${tname}
                    (
-                       id          INTEGER PRIMARY KEY,
+                       id INTEGER PRIMARY KEY,
                        client_id   INTEGER,
                        client_guid INTEGER,
                        client_name TEXT,
                        store_id    INTEGER,
                        store_guid  INTEGER,
                        store_name  TEXT,
+                       doc_number  INTEGER,
+                       return_name  TEXT,
                        amount      INTEGER,
                        list        TEXT,
                        sync_status INTEGER,
@@ -193,23 +197,23 @@ export const createTablePKO = async (db, tname) => {
     // create table if not exists
     const query = `CREATE TABLE IF NOT EXISTS ${tname}
                    (
-                       id            INTEGER PRIMARY KEY,
-                       guid,
-                       client_id,
+                       id  INTEGER PRIMARY KEY,
+                       guid TEXT,
+                       client_id INTEGER,
                        client_guid   TEXT,
                        client_name   TEXT,
-                       supplier_id,
-                       supplier_guid,
+                       supplier_id INTEGER,
+                       supplier_guid TEXT,
                        supplier_name TEXT,
-                       store_id,
+                       store_id INTEGER,
                        store_guid    TEXT,
                        store_name    TEXT,
-                       amount,
+                       amount INTEGER,
                        comment       TEXT,
-                       sync_status,
-                       order_date,
-                       doc_type,
-                       exported
+                       sync_status INTEGER,
+                       order_date TEXT,
+                       doc_type INTEGER,
+                       exported INTEGER
                    );`;
     await db.transaction(tx => {
         tx.executeSql(query)
@@ -219,22 +223,22 @@ export const createTableUnsyncPKO = async (db, tname) => {
     // create table if not exists
     const query = `CREATE TABLE IF NOT EXISTS ${tname}
                    (
-                       id            INTEGER PRIMARY KEY,
-                       client_id,
+                       id INTEGER PRIMARY KEY,
+                       client_id INTEGER,
                        client_guid   TEXT,
                        client_name   TEXT,
-                       supplier_id,
+                       supplier_id INTEGER,
                        supplier_guid TEXT,
                        supplier_name TEXT,
-                       store_id,
+                       store_id INTEGER,
                        store_guid    TEXT,
                        store_name    TEXT,
-                       amount,
+                       amount INTEGER,
                        comment       TEXT,
-                       sync_status,
-                       order_date,
-                       doc_type,
-                       exported
+                       sync_status INTEGER,
+                       order_date DATE,
+                       doc_type INTEGER,
+                       exported INTEGER
                    );`;
 
     await db.transaction(async tx => {
@@ -337,11 +341,11 @@ export const addNewItemsToUnsyncReturns = async (db, tname, insertArray) => {
         `INSERT OR
         REPLACE INTO ${tname} (client_id, client_guid, client_name,
                                store_id, store_guid, store_name, amount, list, sync_status, order_date, doc_type,
-                               exported, comment)
+                               exported, comment, doc_number, return_name)
         values` +
         insertArray.map(i => `( ${i.client_id},
     '${i.client_guid}', '${i.client_name}', ${i.store_id}, '${i.store_guid}', '${i.store_name}', ${i.amount}, '${i.list}', ${i.sync_status}, '${i.order_date}',
-    ${i.doc_type}, ${i.exported}, '${i.comment}')`).join(',');
+    ${i.doc_type}, ${i.exported}, '${i.comment}', ${i.doc_number}, '${i.return_name}')`).join(',');
     let result = await new Promise((resolve, reject) => {
         db.transaction( tx => {
             tx.executeSql(insertQuery, null, (trans, results) => {
@@ -359,12 +363,12 @@ export const addNewItemsToUnsyncRequests = async (db, tname, insertArray) => {
         REPLACE INTO ${tname} (client_id, client_guid, client_name,
                                store_id, store_guid, store_name,
                                order_date, delivery_date, amount, list, sync_status,
-                               check_required, doc_type, exported, print_cert, promo, comment)
+                               check_required, doc_type, exported, print_cert, promo, comment, doc_number)
         values` +
         insertArray.map(i => `(${i.client_id},
     '${i.client_guid}', '${i.client_name}', ${i.store_id}, '${i.store_guid}', '${i.store_name}', '${i.order_date}',
     '${i.delivery_date}', ${i.amount}, '${i.list}', ${i.sync_status}, ${i.check_required},
-    ${i.doc_type}, ${i.exported}, ${i.print_cert}, ${i.promo}, '${i.comment}')`).join(',');
+    ${i.doc_type}, ${i.exported}, ${i.print_cert}, ${i.promo}, '${i.comment}', ${i.doc_number})`).join(',');
 
 
     let result = await new Promise((resolve, reject) => {
@@ -455,7 +459,7 @@ export const addNewItemsToNomenclatures = async (db, tname, insertArray) => {
     });
 };
 
-export const deleteItem = async (db, tname, id: number) => {
+export const deleteItem = async (db, tname, id) => {
     const deleteQuery = `DELETE
                          from ${tname}
                          where id = ${id}`;
@@ -492,3 +496,64 @@ export const checkTableExist = async (db, tname) => {
     })
 
 }
+
+export const updateRequest = async (db, tname, insertObj, id) => {
+
+    const insertQuery =`UPDATE ${tname} SET client_id = ?, client_guid = ?, client_name = ?, store_id = ?, store_guid = ?,
+                                            store_name = ?, delivery_date = ?, amount = ?, list = ?, check_required = ?, doc_type = ?, exported = ?,
+                                            print_cert = ?, promo = ?, doc_number = ?, comment = ? WHERE id = ?`
+
+
+    await db.transaction(tx => {
+        tx.executeSql(insertQuery,
+            [Number(insertObj.client_id), insertObj.client_guid, insertObj.client_name, insertObj.store_id, insertObj.store_guid,
+                insertObj.store_name, insertObj.delivery_date, insertObj.amount, insertObj.list, insertObj.check_required, insertObj.doc_type, insertObj.exported,
+                insertObj.print_cert, insertObj.promo, insertObj.doc_number, insertObj.comment, id],
+
+            (txObj, resultSet) => console.log('db data res ------>', resultSet),
+            (txObj, error) => console.log('Error insert', error)
+        );
+
+    });
+};
+
+export const updateReturn = async (db, tname, insertObj, id) => {
+
+    const insertQuery =`UPDATE ${tname} SET client_id = ?, client_guid = ?, client_name = ?, store_id = ?, store_guid = ?,
+                                            store_name = ?, amount = ?, list = ?, doc_type = ?, exported = ?, comment = ?, doc_number = ?,
+                                            return_name = ?, doc_type = ?  WHERE id = ?`
+
+
+    await db.transaction(tx => {
+        tx.executeSql(insertQuery,
+            [Number(insertObj.client_id), insertObj.client_guid, insertObj.client_name, insertObj.store_id, insertObj.store_guid,
+                insertObj.store_name, insertObj.amount, insertObj.list, insertObj.doc_type, insertObj.exported,
+                insertObj.comment, insertObj.doc_number, insertObj.return_name, insertObj.doc_type, id],
+
+            (txObj, resultSet) => console.log('db data res ------>', resultSet),
+            (txObj, error) => console.log('Error insert', error)
+        );
+
+    });
+};
+
+export const updatePko = async (db, tname, insertObj, id) => {
+
+    const insertQuery =`UPDATE ${tname} SET client_id = ?, client_guid = ?, client_name = ?, store_id = ?, store_guid = ?,
+                                            store_name = ?, supplier_id = ?, supplier_guid = ?, supplier_name = ?,amount = ?, comment = ?, 
+                                            doc_type = ?  WHERE id = ?`
+
+
+    await db.transaction(tx => {
+        tx.executeSql(insertQuery,
+            [Number(insertObj.client_id), insertObj.client_guid, insertObj.client_name, insertObj.store_id, insertObj.store_guid,
+                insertObj.store_name, insertObj.supplier_id, insertObj.supplier_guid, insertObj.supplier_name, insertObj.amount,
+                insertObj.comment, insertObj.doc_type, id],
+
+            (txObj, resultSet) => console.log('db data res ------>', resultSet),
+            (txObj, error) => console.log('Error insert', error)
+        );
+
+    });
+};
+

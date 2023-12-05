@@ -11,18 +11,14 @@ import NetInfo from "@react-native-community/netinfo";
 import { NetworkContext } from '../context';
 
 
-export default NetoworkIndicator = () => {
-
-    const [active, setActive] = useState(false);
+export default function NetoworkIndicator  () {
 
     const {network} = useContext(NetworkContext);
 
-    /* const open = () => {
-        lsMenuSetVisible(true);
-    } */
+
     return(
         <View style={[style.indicator, network ? {backgroundColor: 'green'} : {backgroundColor: 'red'}]}>
-            
+
         </View>
     )
 }

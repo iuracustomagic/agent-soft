@@ -70,7 +70,7 @@ const db = SQLite.openDatabase('db.db')
 
     return(
         <View style={{height: '100%'}}>
-
+            <Text style={style.title}>Создать заявку</Text>
             <View style={[styles.column, style.center]}>
                 <View style={[styles.row,
                     {width: '80%', alignSelf: 'center'}]}>
@@ -108,7 +108,7 @@ const db = SQLite.openDatabase('db.db')
                 {/*    {showNames()}*/}
                 {/*</View>*/}
             </View>
-            <Text style={styles.version}>v1.4 {ver}</Text>
+            <Text style={styles.version}>v1.5 {ver}</Text>
 
         </View>
     )
@@ -119,4 +119,8 @@ const style = StyleSheet.create({
         justifyContent: 'center',
         height: '90%'
     },
+    title:{
+        fontSize: 26,
+        alignSelf: 'center',
+    }
 })

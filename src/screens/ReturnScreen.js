@@ -1,33 +1,30 @@
 import React, { useState, useEffect } from 'react';
 
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
+
   TouchableOpacity,
   View,
   Image,
   FlatList,
-  BackHandler
+
 } from 'react-native';
-import { NavigationContainer, useIsFocused } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {  useIsFocused } from '@react-navigation/native';
+
 import { consts } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
+
 import { styles } from '../styles/styles';
-import { DefaultBtn } from '../components/DefaultBtn';
+
 import { IconBtn } from '../components/IconBtn';
 import { DefaultTextInput } from '../components/DefaultTextInput';
 import { getAllItems, getDBConnection } from '../db/db';
 import { OrderModal } from '../components/modals/OrderModal';
 import { CorrectDate, GetCorrectJSDate, GetDate } from '../utils/GetDate';
 import AntIcon from "react-native-vector-icons/AntDesign";
-import { NetworkContext } from '../context';
-import SimpleToast from 'react-native-simple-toast';
+
 import { Filtrum } from '../components/modals/Filtrum';
+import {Loading} from "../components/modals/Loading";
 
 export const ReturnScreen = ({navigation}) => {
 
@@ -40,6 +37,7 @@ export const ReturnScreen = ({navigation}) => {
     const [orders, setOrders] = useState([]);
     const [refresh, setRefresh] = useState(false);
     const [totalSum, setTotalSum] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     function itemVisibleChanger(value){
         setItemVisible(value);
@@ -65,118 +63,129 @@ export const ReturnScreen = ({navigation}) => {
         setFilterVisible(value);
     }
     const filter = async (value) => {
-        switch (value){
-            case 'dateUp':
-                setData(orders.sort((a, b) => {
-                    return new Date(a.order_date) - new Date(b.order_date)
-                }))
-                break;
-            case 'dateDown':
-                setData(orders.sort((a, b) => {
-                    return new Date(b.order_date) - new Date(a.order_date)
-                }))
-                break;
-            case 'sumUp':
-                setData(orders.sort((a, b) => {
-                    return a.amount - b.amount
-                }))
-                break;
-            case 'sumDown':
-                setData(orders.sort((a, b) => {
-                    return b.amount - a.amount
-                }))
-                break;
-            case 'nameUp':
-                setData(orders.sort((a, b) => {
-                    if ( a.store_name < b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name > b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                }))
-                break;
-            case 'nameDown':
-                setData(orders.sort((a, b) => {
-                    if ( a.store_name > b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name < b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                }))
-                break;
-            case 'clear':
-                orders.sort((a, b) => {
-                    if ( a.store_name < b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name > b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                });
-                orders.filter(i => i.order_date == CorrectDate(GetDate('today')))
-                setData(orders)
-                break;
-        }
-    }
-
-    /* useEffect(() => {
-                BackHandler.addEventListener('hardwareBackPress', toHome);
-        return () => {
-            BackHandler.removeEventListener('hardwareBackPress', toHome);
-        };
-    }) */
-
-    const toHome = () => {
-        navigation.navigate('Home');
-    }
-
-    useEffect(() => {
-        async function getDataFromDB(){
+        try {
+            setLoading(true);
             const db = await getDBConnection();
-            var unsyncOrders = await getAllItems(db, 'unsyncReturns');
-            var defaultOrders = await getAllItems(db, 'returns');
-            /* console.log(unsyncOrders)
-            console.log(defaultOrders) */
-            await defaultOrders.map((i) => {
+            let unsyncOrders = await getAllItems(db, 'unsyncReturns');
+            let defaultOrders = await getAllItems(db, 'returns');
+
+
+            defaultOrders.map((i) => {
                 i.list = JSON.parse(i.list)
             })
             if (unsyncOrders){
-                await unsyncOrders.map((i) => {
+                unsyncOrders.map((i) => {
                     i.local = true;
                     i.list = JSON.parse(i.list)
                 })
-                /* unsyncOrders = unsyncOrders.filter(i => i.order_date == CorrectDate(GetDate('today')) && i.sync_status == 0);
-                console.log(unsyncOrders); */
+
             }
-            await setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
+            unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders
 
-            /* orders = orders.sort((a, b) => {
-                var key1 = GetCorrectJSDate(a.order_date).getTime();
-                var key2 = GetCorrectJSDate(b.order_date).getTime();
-                if (key1 > key2) {
-                    return -1;
-                } else if (key1 == key2) {
-                    return 0;
-                } else {
-                    return 1;
-                }
-
-            }) */
             /* orders = orders.filter(i => i.order_date == CorrectDate(GetDate('today')));
             console.log(orders); */
-            defaultOrders = await unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders;
-            defaultOrders = await defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
-            await setData(defaultOrders);
-            await setRefresh(!refresh);
-        }
-        isFocused && getDataFromDB();
 
-    }, [isFocused])
+            switch (value){
+                case 'dateUp':
+                    setData(defaultOrders.sort((a, b) => {
+                        return new Date(a.order_date) - new Date(b.order_date)
+                    }))
+                    break;
+                case 'dateDown':
+                    setData(defaultOrders.sort((a, b) => {
+                        return new Date(b.order_date) - new Date(a.order_date)
+                    }))
+                    break;
+                case 'sumUp':
+                    setData(defaultOrders.sort((a, b) => {
+                        return a.amount - b.amount
+                    }))
+                    break;
+                case 'sumDown':
+                    setData(defaultOrders.sort((a, b) => {
+                        return b.amount - a.amount
+                    }))
+                    break;
+                case 'nameUp':
+                    setData(defaultOrders.sort((a, b) => {
+                        if ( a.store_name < b.store_name ){
+                            return -1;
+                        }
+                        if ( a.store_name > b.store_name ){
+                            return 1;
+                        }
+                        return 0;
+                    }))
+                    break;
+                case 'nameDown':
+                    setData(defaultOrders.sort((a, b) => {
+                        if ( a.store_name > b.store_name ){
+                            return -1;
+                        }
+                        if ( a.store_name < b.store_name ){
+                            return 1;
+                        }
+                        return 0;
+                    }))
+                    break;
+                case 'clear':
+
+                    setData(defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today'))))
+                    break;
+            }
+        } catch (e) {
+            console.log(e)
+        } finally {
+            setLoading(false);
+        }
+
+    }
+
+
+    useEffect(() => {
+        async function getDataFromDB(){
+            try {
+                setLoading(true)
+                const db = await getDBConnection();
+                let unsyncOrders = await getAllItems(db, 'unsyncReturns');
+
+                let todayReturns = await getAllItems(db, 'todayReturns')
+
+                console.log('todayReturns', todayReturns)
+                console.log('unsyncReturns', unsyncOrders)
+                todayReturns = todayReturns.filter(i => i.order_date == CorrectDate(GetDate('today')));
+
+                if(todayReturns) {
+                    todayReturns.map((i) => {
+                        i.list = JSON.parse(i.list)
+                    })
+                }
+
+                if (unsyncOrders){
+                    unsyncOrders = unsyncOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
+                    unsyncOrders.map((i) => {
+                        i.local = true;
+                        i.list = JSON.parse(i.list)
+                    })
+
+                }
+
+
+                todayReturns = unsyncOrders.length ? unsyncOrders.concat(todayReturns) : todayReturns;
+
+                setData(todayReturns);
+                // setRefresh(!refresh);
+                // console.log(defaultOrders)
+            }catch (e) {
+                console.log(e)
+            } finally {
+                setLoading(false)
+            }
+
+        }
+        getDataFromDB();
+
+    }, [])
 
     useEffect(() => {
         async function summator(){
@@ -246,10 +255,11 @@ export const ReturnScreen = ({navigation}) => {
 
                                 return(
                                 <TouchableOpacity
+                                    style={ {backgroundColor: item.local ? 'orange': ''}}
                                     onPress={() => {
                                         showItemModal(item)
                                     }}
-                                    style={style.item}
+                                    // style={style.item}
                                 >
                                     <View style={[style.item, style.itemBack]}>
                                         <Text style={[style.itemText, style.itemTextName]}>
@@ -282,7 +292,7 @@ export const ReturnScreen = ({navigation}) => {
                                             </View>
                                         }
 
-                                        <Text style={[style.itemText, , {maxWidth: '25%'}]}>
+                                        <Text style={[style.itemText, {maxWidth: '25%'}]}>
                                             {item.order_date}
                                         </Text>
                                     </View>
@@ -314,6 +324,7 @@ export const ReturnScreen = ({navigation}) => {
                 setVisible={filterVisibleChanger}
                 callback={filter}
             />
+            <Loading visible={loading}/>
         </View>
     )
 }

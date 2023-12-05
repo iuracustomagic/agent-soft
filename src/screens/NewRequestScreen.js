@@ -29,29 +29,24 @@ import { SureModal } from '../components/modals/SureModal';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Auth } from '../API/auth';
 import {openDatabase} from "expo-sqlite";
-import { NetworkContext, RefresherContext } from '../context';
+import {NetworkContext} from '../context';
 
 
 export const NewRequestScreen = ({navigation}) => {
 
-    const [data, setData] = useState([{name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}]);
-    const [activeBtn, setActiveBtn] = useState(1);
     const [products, setProducts] = useState([]);
     const [dbProducts, setDBProducts] = useState([]);
     const [toShowProducts, setToShowProducts] = useState([]);
-    const [dbClients, setDBClients] = useState([]);
     const [productPickerVisible, setProductPickerVisible] = useState(false);
     const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
     const [clientPickerVisible, setClientPickerVisible] = useState(false);
-    const [storePickerVisible, setStorePickerVisible] = useState(false);
     const [counterForProductPickerVisible, setCounterForProductPickerVisible] = useState(false);
     const [chosenProduct, setChosenProduct] = useState({});
-    const [chosenCategory, setChosenCategory] = useState({});
-    const [chosenClient, setChosenClient] = useState({});
+    // const [chosenCategory, setChosenCategory] = useState({});
+    // const [chosenClient, setChosenClient] = useState({});
     const [readyClient, setReadyClient] = useState({});
-    const [chosenStore, setChosenStore] = useState({});
-    const [client, setClient] = useState({});
-    const [clients, setClients] = useState({});
+
+    // const [client, setClient] = useState({});
     const [loading, setLoading] = useState(false);
     const [moddedCategories, setModdedCategories] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -62,6 +57,7 @@ export const NewRequestScreen = ({navigation}) => {
     const [totalSum, setTotalSum] = useState(0);
     const [checkRequired, setCheckRequired] = useState(0);
     const [docType, setDocType] = useState(0);
+    const [docNumber, setDocNumber] = useState(0);
     const [printCert, setPrintCert] = useState(0);
     const [promo, setPromo] = useState(0);
     const [refSum, setRefSum] = useState(false);
@@ -70,10 +66,7 @@ export const NewRequestScreen = ({navigation}) => {
     const [comment, setComment] = useState('');
     const {network} = useContext(NetworkContext);
 
-    function changeActive(value){
-        setActiveBtn(value)
 
-    }
     function setDate(event, date){
         setDatePicker(false);
         // console.log(event);
@@ -108,7 +101,7 @@ export const NewRequestScreen = ({navigation}) => {
 
     useEffect(() => {
         async function summator(){
-            var sum = 0;
+            let sum = 0;
             await products.map(i => sum += i.price * i.quantity);
             await setTotalSum(sum.toFixed(2));
         }
@@ -124,9 +117,7 @@ export const NewRequestScreen = ({navigation}) => {
     function clientPickerVisibility(value){
         setClientPickerVisible(value);
     }
-    function storePickerVisibility(value){
-        setStorePickerVisible(value);
-    }
+
     function counterProductPickerVisibility(value){
         setCounterForProductPickerVisible(value);
     }
@@ -170,39 +161,39 @@ export const NewRequestScreen = ({navigation}) => {
         setCounterForProductPickerVisible(true);
     }
     function chosenCategoryHandler(data){
-        setChosenCategory(data);
+        // setChosenCategory(data);
         let newAr = dbProducts.filter(i => i.category_id === data);
         setToShowProducts(newAr);
         setProductPickerVisible(true);
     }
-    async function chosenClientHandler(data){
-        //console.log(data)
-        if (data.stores !== 'null'){
-            await setChosenClient(JSON.parse(data.stores));
-            await setClient(data);
-            await setStorePickerVisible(true);
-        }
-
-        //await setClientPickerVisible(false);
-
-        //console.log(chosenClient);
-    }
+    // async function chosenClientHandler(data){
+    //     //console.log(data)
+    //     if (data.stores !== 'null'){
+    //         await setChosenClient(JSON.parse(data.stores));
+    //         await setClient(data);
+    //         // await setStorePickerVisible(true);
+    //     }
+    //
+    //     //await setClientPickerVisible(false);
+    //
+    //     //console.log(chosenClient);
+    // }
     function removeProduct(id){
         const items = products.filter(item => item.nomenclature_id != id);
         setProducts(items);
         alrdy(id, false);
     }
     function chooseStore(store){
-        var badPrices = 0;
-        var nmcls_count = 0;
-        // console.log(store)
+        let badPrices = 0;
+        let nmcls_count = 0;
+
         dbProducts.map(i => {
 
-            var spt = store.price_types.find(spts => spts.organization_id == i.organization_id);
-            var real_price = 0;
+            let spt = store.price_types.find(spts => spts.organization_id == i.organization_id);
+            let real_price = 0;
             if (spt){
                 if (i.price){
-                    var pf = i.price.find(p => p.price_type_guid == spt.guid);
+                    let pf = i.price.find(p => p.price_type_guid == spt.guid);
                     if (pf)
                         real_price = pf.price;
                 }
@@ -215,8 +206,7 @@ export const NewRequestScreen = ({navigation}) => {
 
             nmcls_count++;
         })
-        // console.log('badPrices: ' + badPrices);
-        // console.log('nomenclatures count: ' + nmcls_count);
+
         products.map(i => {
             i.price = dbProducts.find(p => i.nomenclature_id == p.id).real_price
         })
@@ -232,15 +222,16 @@ export const NewRequestScreen = ({navigation}) => {
             moddedCategories.map(mc => {
                 delete mc.blocked;
             })
+        console.log('store', store)
         setReadyClient(store);
         setClientPickerVisible(false);
         setRefSum(!refSum);
     }
 
 
-    function goBack(){
-        navigation.goBack();
-    }
+    // function goBack(){
+    //     navigation.goBack();
+    // }
     const changeProduct = (id) => {
         const pr = dbProducts.find(i => i.id == id);
         chosenProductHandler(pr);
@@ -250,7 +241,7 @@ export const NewRequestScreen = ({navigation}) => {
             if (products){
                 setLoading(true);
 
-                const token = await AsyncStorage.getItem('@token');
+                let token = await AsyncStorage.getItem('@token');
                 const db = openDatabase('db.db' );
 
                 let reqUnsync = {
@@ -273,39 +264,52 @@ export const NewRequestScreen = ({navigation}) => {
                 let req = {};
                 Object.assign(req, reqUnsync);
 
-                const resp = await SendNewRequest(token, req);
-
                 if (network){
-                    Toast.show('Заявка успешно отправлена');
-                    // await deleteItem(db, 'unsyncReqs', reqU);
 
                     try {
-                        let requests = await GetRequests(token);
-                        // console.log('requests', requests)
-                        let clientsToAdd = await getAllItems(db, 'clients');
-                        // console.log('clientsToAdd', clientsToAdd[0])
-                        // if (requests.status == 'ok'){
-                        await createTableRequests(db, 'requests');
-                        await requests.orders.map(i => {
-                            var client = clientsToAdd.find(c => c.id == i.client_id);
+                        const resp = await SendNewRequest(token, req);
+                        if(resp.status === 'ok') {
+                            let clientsToAdd = await getAllItems(db, 'clients');
+                            const replace = (order) => {
+                                var client = clientsToAdd.find(c => c.id == order.client_id);
 
-                            if (client)
-                                i.client_name = client.name.replace(/[']+/g, "''");
-                            else
-                                i.client_name = 'noname'
+                                if (client) {
+                                    order.client_name = client.name.replace(/[']+/g, "''");
+                                }
+                                else {
+                                    order.client_name = 'noname'
+                                }
 
-                            if (client)
-                                if (client.stores != 'null')
-                                    if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                                        i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
-                                    else
-                                        i.store_name = 'null';
-                                else
-                                    i.store_name = 'null'
-                            i.list = i.list.replace(/[']+/g, "''");
-                            i.order_date = i.created_at.substring(0, 10);
-                        })
-                        await addNewItemsToRequests(db, 'requests', requests.orders);
+                                if (client) {
+                                    if (client.stores != 'null') {
+                                        if (JSON.parse(client.stores).find(s => s.id == order.store_id))
+                                            order.store_name = JSON.parse(client.stores).find(s => s.id == order.store_id).name.replace(/[']+/g, "''");
+                                    }
+                                    else {
+                                        order.store_name = 'null';
+                                    }
+                                }
+                                else {
+                                    order.store_name = 'null'
+                                }
+                                order.list = order.list.replace(/[']+/g, "''");
+                                order.order_date = order.created_at.substring(0, 10);
+                            }
+                            const orderResponse = resp.order
+                            // console.log('orderResponse',orderResponse)
+                            replace(orderResponse)
+                            console.log('resp.order',[orderResponse] )
+                            await addNewItemsToRequests(db, 'requests', [orderResponse]);
+                            await addNewItemsToRequests(db, 'todayRequests', [orderResponse]);
+
+                            Toast.show('Заявка успешно отправлена');
+
+
+                        } else{
+                            setLoading(false);
+                            Toast.show('Заявка не отправлена');
+                            console.log(resp)
+                        }
 
                             } catch (err) {
                                 console.log(err)
@@ -316,23 +320,24 @@ export const NewRequestScreen = ({navigation}) => {
                     }
                 else{
 
-
-
                     // console.log('reqUnsync before', reqUnsync)
                     reqUnsync.client_name = readyClient.client_name;
                     reqUnsync.store_name = readyClient.name;
                     reqUnsync.order_date = CorrectDate(GetDate('today'));
                     reqUnsync.sync_status = false;
+                    reqUnsync.doc_number = Number(docNumber);
                     reqUnsync.list = JSON.stringify(req.list);
                     reqUnsync.list = reqUnsync.list.replace(/[']+/g, "''");
 
                     reqUnsync = [reqUnsync];
-                    // console.log('reqUnsync after', reqUnsync)
+                    console.log('reqUnsync after', reqUnsync)
 
 
                     console.log('--------------------------------------------------')
                     // console.log(req);
-                    let reqU = await addNewItemsToUnsyncRequests(db, 'unsyncReqs', reqUnsync);
+                    // await deleteTable(db, 'unsyncReqs')
+                    // await createTableUnsyncRequests(db, 'unsyncReqs')
+                   await addNewItemsToUnsyncRequests(db, 'unsyncReqs', reqUnsync);
 
 
                     Toast.show('Заявка сохранена на телефоне');
@@ -402,6 +407,16 @@ export const NewRequestScreen = ({navigation}) => {
                 }
             })
 
+            storesToAdd.sort(function (a, b) {
+                if (a.client_name < b.client_name) {
+                    return -1;
+                }
+                if (a.client_name > b.client_name) {
+                    return 1;
+                }
+                return 0;
+            })
+
             setStores(storesToAdd);
 
             suppliers.map(i => {
@@ -428,7 +443,7 @@ export const NewRequestScreen = ({navigation}) => {
                 const validToken = await ValidToken(token)
                 console.log('ValidToken', validToken)
                 if(validToken.data === 'Token is valid') {
-                    const balances = await GetBalance(token);
+                    // const balances = await GetBalance(token);
 
                     productsToAdd.map(i => {
                         i.price = JSON.parse(i.price);
@@ -436,11 +451,11 @@ export const NewRequestScreen = ({navigation}) => {
                     })
 
                     setCategories(categories);
-                    if (balances.status === 'ok') {
-                        productsToAdd.map(i => {
-                            i.balance = balances.balance.filter(b => b.nomenclature_id === i.id);
-                        })
-                    }
+                    // if (balances.status === 'ok') {
+                    //     productsToAdd.map(i => {
+                    //         i.balance = balances.balance.filter(b => b.nomenclature_id === i.id);
+                    //     })
+                    // }
                     // console.log('productsToAdd', productsToAdd)
                     setDBProducts(productsToAdd);
 
@@ -474,6 +489,15 @@ export const NewRequestScreen = ({navigation}) => {
                                 storesToAdd.push(l);
                             })
                         }
+                    })
+                    storesToAdd.sort(function (a, b) {
+                        if (a.client_name < b.client_name) {
+                            return -1;
+                        }
+                        if (a.client_name > b.client_name) {
+                            return 1;
+                        }
+                        return 0;
                     })
 
                     setStores(storesToAdd);
@@ -553,6 +577,8 @@ export const NewRequestScreen = ({navigation}) => {
                                     <DefaultTextInput
                                         placeholder={'Номер документа'}
                                         mt={15}
+                                        value={docNumber}
+                                        onChangeText={setDocNumber}
                                     />
                                     <Text style={style.descr}>Дата создания:</Text>
                                     <DefaultTextInput

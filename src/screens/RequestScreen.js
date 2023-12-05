@@ -17,8 +17,9 @@ import { getAllItems, getDBConnection } from '../db/db';
 import { OrderModal } from '../components/modals/OrderModal';
 import { CorrectDate, GetCorrectJSDate, GetDate } from '../utils/GetDate';
 import AntIcon from "react-native-vector-icons/AntDesign";
-import { NetworkContext, RefresherContext } from '../context';
+import { NetworkContext, RefresherContext, TodayOrdersContext } from '../context';
 import { Filtrum } from '../components/modals/Filtrum';
+import {Loading} from "../components/modals/Loading";
 
 export const RequestScreen = ({navigation}) => {
 
@@ -34,6 +35,7 @@ export const RequestScreen = ({navigation}) => {
     const [refresh, setRefresh] = useState(false);
     const [totalSum, setTotalSum] = useState(0);
     const {refresher, setRefresher} = useContext(RefresherContext);
+    const [loading, setLoading] = useState(false);
 
     function itemVisibleChanger(value){
         setItemVisible(value);
@@ -53,63 +55,92 @@ export const RequestScreen = ({navigation}) => {
     }, [data])
 
     const filter = async (value) => {
-        switch (value){
-            case 'dateUp':
-                setData(orders.sort((a, b) => {
-                    return new Date(a.order_date) - new Date(b.order_date)
-                }))
-                break;
-            case 'dateDown':
-                setData(orders.sort((a, b) => {
-                    return new Date(b.order_date) - new Date(a.order_date)
-                }))
-                break;
-            case 'sumUp':
-                setData(orders.sort((a, b) => {
-                    return a.amount - b.amount
-                }))
-                break;
-            case 'sumDown':
-                setData(orders.sort((a, b) => {
-                    return b.amount - a.amount
-                }))
-                break;
-            case 'nameUp':
-                setData(orders.sort((a, b) => {
-                    if ( a.store_name < b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name > b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                }))
-                break;
-            case 'nameDown':
-                setData(orders.sort((a, b) => {
-                    if ( a.store_name > b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name < b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                }))
-                break;
-            case 'clear':
-                orders.sort((a, b) => {
-                    if ( a.store_name < b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name > b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                });
-                orders.filter(i => i.order_date == CorrectDate(GetDate('today')))
-                setData(orders)
-                break;
+
+        try{
+            setLoading(true);
+
+            const db = await getDBConnection();
+            var unsyncOrders = await getAllItems(db, 'unsyncReqs');
+            var defaultOrders = await getAllItems(db, 'requests');
+
+            defaultOrders.map((i) => {
+                i.list = JSON.parse(i.list)
+            })
+            if (unsyncOrders.length){
+                unsyncOrders.map((i) => {
+                    i.local = true;
+                    i.list = JSON.parse(i.list)
+                })
+
+            }
+            unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders
+            // setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
+            // setData(defaultOrders);
+            console.log('orders length', defaultOrders.length)
+            switch (value){
+                case 'dateUp':
+                    setData(defaultOrders.sort((a, b) => {
+                        return new Date(a.order_date) - new Date(b.order_date)
+                    }))
+                    break;
+                case 'dateDown':
+                    setData(defaultOrders.sort((a, b) => {
+                        return new Date(b.order_date) - new Date(a.order_date)
+                    }))
+                    break;
+                case 'sumUp':
+                    setData(defaultOrders.sort((a, b) => {
+                        return a.amount - b.amount
+                    }))
+                    break;
+                case 'sumDown':
+                    setData(defaultOrders.sort((a, b) => {
+                        return b.amount - a.amount
+                    }))
+                    break;
+                case 'nameUp':
+                    setData(defaultOrders.sort((a, b) => {
+                        if ( a.store_name < b.store_name ){
+                            return -1;
+                        }
+                        if ( a.store_name > b.store_name ){
+                            return 1;
+                        }
+                        return 0;
+                    }))
+                    break;
+                case 'nameDown':
+                    setData(defaultOrders.sort((a, b) => {
+                        if ( a.store_name > b.store_name ){
+                            return -1;
+                        }
+                        if ( a.store_name < b.store_name ){
+                            return 1;
+                        }
+                        return 0;
+                    }))
+                    break;
+                case 'clear':
+                    // defaultOrders.sort((a, b) => {
+                    //     if ( a.store_name < b.store_name ){
+                    //         return -1;
+                    //     }
+                    //     if ( a.store_name > b.store_name ){
+                    //         return 1;
+                    //     }
+                    //     return 0;
+                    // });
+
+                    setData(defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today'))))
+                    break;
+            }
+        } catch (e) {
+            console.log(e)
+        } finally {
+            setLoading(false);
         }
+
+
     }
 
     function newRequest(){
@@ -130,31 +161,55 @@ export const RequestScreen = ({navigation}) => {
 
     useEffect(() => {
         async function getDataFromDB(){
-            const db = await getDBConnection();
-            var unsyncOrders = await getAllItems(db, 'unsyncReqs');
-            var defaultOrders = await getAllItems(db, 'requests');
+            try{
+                setLoading(true);
+                const db = await getDBConnection();
+                let unsyncOrders = await getAllItems(db, 'unsyncReqs');
+                console.log('unsyncReqs',unsyncOrders)
+                // let defaultOrders = await getAllItems(db, 'requests');
+                let todayOrders = await getAllItems(db, 'todayRequests');
+                console.log('todayOrders', todayOrders)
+                // defaultOrders = defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
 
-            await defaultOrders.map((i) => {
-                i.list = JSON.parse(i.list)
-            })
-            if (unsyncOrders.length){
-                await unsyncOrders.map((i) => {
-                    i.local = true;
-                    i.list = JSON.parse(i.list)
-                })
 
+
+                todayOrders = todayOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
+
+                if(todayOrders) {
+                    todayOrders.map((i) => {
+                        i.list = JSON.parse(i.list)
+                    })
+                }
+
+
+                if (unsyncOrders.length){
+                    unsyncOrders = unsyncOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
+                    unsyncOrders.map((i) => {
+                        i.local = true;
+                        i.list = JSON.parse(i.list)
+                    })
+
+                }
+                // setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
+
+                todayOrders = unsyncOrders.length ? unsyncOrders.concat(todayOrders) : todayOrders;
+
+
+                setData(todayOrders);
+                // setRefresh(!refresh);
+
+
+            }catch (e) {
+                console.log(e)
+            } finally {
+                setLoading(false);
             }
-            await setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
 
 
-            defaultOrders = await unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders;
-            defaultOrders = await defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
-            // console.log('defaultOrders', defaultOrders[0])
-            await setData(defaultOrders);
-            await setRefresh(!refresh);
         }
-        isFocused && getDataFromDB();
-    }, [isFocused])
+      getDataFromDB();
+         // getDataFromDB();
+    }, [])
 
     return(
         <View style={{height: '100%'}}>
@@ -285,6 +340,7 @@ export const RequestScreen = ({navigation}) => {
                 setVisible={filterVisibleChanger}
                 callback={filter}
             />
+            <Loading visible={loading}/>
         </View>
     )
 }

@@ -1,38 +1,33 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
   TouchableOpacity,
   View,
-  Image,
   FlatList,
 } from 'react-native';
 import { NavigationContainer, useIsFocused } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import { consts } from '../consts/const';
-import HeaderBar from '../components/HeaderBar';
+
 import { styles } from '../styles/styles';
-import { DefaultBtn } from '../components/DefaultBtn';
+
 import { IconBtn } from '../components/IconBtn';
 import { DefaultTextInput } from '../components/DefaultTextInput';
 import { getAllItems, getDBConnection } from '../db/db';
 import { OrderModal } from '../components/modals/OrderModal';
 import { CorrectDate, GetCorrectJSDate, GetDate } from '../utils/GetDate';
 import AntIcon from "react-native-vector-icons/AntDesign";
-import { NetworkContext } from '../context';
-import SimpleToast from 'react-native-simple-toast';
+
+
 import { Filtrum } from '../components/modals/Filtrum';
+import {Loading} from "../components/modals/Loading";
 
 export const PkoScreen = ({navigation}) => {
 
-    const {network} = useContext(NetworkContext);
 
-    const [data, setData] = useState([/* {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000} */]);
+    const [data, setData] = useState([]);
     const [itemVisible, setItemVisible] = useState(false);
     const [chosenItem, setChosenItem] = useState({});
     const [productList, setProductList] = useState({});
@@ -41,6 +36,7 @@ export const PkoScreen = ({navigation}) => {
     const [orders, setOrders] = useState([]);
     const [refresh, setRefresh] = useState(false);
     const [totalSum, setTotalSum] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     function itemVisibleChanger(value){
         setItemVisible(value);
@@ -60,63 +56,75 @@ export const PkoScreen = ({navigation}) => {
     }, [data])
 
     const filter = async (value) => {
-        switch (value){
-            case 'dateUp':
-                setData(orders.sort((a, b) => {
-                    return new Date(a.order_date) - new Date(b.order_date)
-                }))
-                break;
-            case 'dateDown':
-                setData(orders.sort((a, b) => {
-                    return new Date(b.order_date) - new Date(a.order_date)
-                }))
-                break;
-            case 'sumUp':
-                setData(orders.sort((a, b) => {
-                    return a.amount - b.amount
-                }))
-                break;
-            case 'sumDown':
-                setData(orders.sort((a, b) => {
-                    return b.amount - a.amount
-                }))
-                break;
-            case 'nameUp':
-                setData(orders.sort((a, b) => {
-                    if ( a.store_name < b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name > b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                }))
-                break;
-            case 'nameDown':
-                setData(orders.sort((a, b) => {
-                    if ( a.store_name > b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name < b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                }))
-                break;
-            case 'clear':
-                orders.sort((a, b) => {
-                    if ( a.store_name < b.store_name ){
-                        return -1;
-                      }
-                      if ( a.store_name > b.store_name ){
-                        return 1;
-                      }
-                      return 0;
-                });
-                orders.filter(i => i.order_date == CorrectDate(GetDate('today')))
-                setData(orders)
-                break;
+        try{
+            setLoading(true);
+            const db = await getDBConnection();
+            let unsyncOrders = await getAllItems(db, 'unsyncPKO');
+            let defaultOrders = await getAllItems(db, 'pko');
+
+            if (unsyncOrders){
+                unsyncOrders.map((i) => {
+                    i.local = true;
+                })
+            }
+            defaultOrders = unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders;
+            setOrders(defaultOrders);
+
+            switch (value){
+                case 'dateUp':
+                    setData(orders.sort((a, b) => {
+                        return new Date(a.order_date) - new Date(b.order_date)
+                    }))
+                    break;
+                case 'dateDown':
+                    setData(orders.sort((a, b) => {
+                        return new Date(b.order_date) - new Date(a.order_date)
+                    }))
+                    break;
+                case 'sumUp':
+                    setData(orders.sort((a, b) => {
+                        return a.amount - b.amount
+                    }))
+                    break;
+                case 'sumDown':
+                    setData(orders.sort((a, b) => {
+                        return b.amount - a.amount
+                    }))
+                    break;
+                case 'nameUp':
+                    setData(orders.sort((a, b) => {
+                        if ( a.store_name < b.store_name ){
+                            return -1;
+                        }
+                        if ( a.store_name > b.store_name ){
+                            return 1;
+                        }
+                        return 0;
+                    }))
+                    break;
+                case 'nameDown':
+                    setData(orders.sort((a, b) => {
+                        if ( a.store_name > b.store_name ){
+                            return -1;
+                        }
+                        if ( a.store_name < b.store_name ){
+                            return 1;
+                        }
+                        return 0;
+                    }))
+                    break;
+                case 'clear':
+
+                    orders.filter(i => i.order_date == CorrectDate(GetDate('today')))
+                    setData(orders)
+                    break;
+            }
+        }catch (e) {
+            console.log(e)
+        }finally {
+            setLoading(false);
         }
+
     }
 
     function newRequest(){
@@ -137,25 +145,36 @@ export const PkoScreen = ({navigation}) => {
     }
 
     useEffect(() => {
+
         async function getDataFromDB(){
-            const db = await getDBConnection();
-            var unsyncOrders = await getAllItems(db, 'unsyncPKO');
-            var defaultOrders = await getAllItems(db, 'pko');
-            console.log(unsyncOrders)
-            console.log(defaultOrders)
-            if (unsyncOrders){
-                await unsyncOrders.map((i) => {
-                    i.local = true;
-                })
+            try {
+                setLoading(true);
+                const db = await getDBConnection();
+                let unsyncOrders = await getAllItems(db, 'unsyncPKO');
+                let defaultOrders = await getAllItems(db, 'pko');
+
+                if (unsyncOrders){
+                    unsyncOrders.map((i) => {
+                        i.local = true;
+                    })
+                }
+                console.log('unsyncPKO', unsyncOrders)
+                defaultOrders = unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders;
+                setOrders(defaultOrders);
+
+                defaultOrders = defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
+                setData(defaultOrders);
+                setRefresh(!refresh);
+
+            }catch (e) {
+                console.log(e)
+            }finally {
+                setLoading(false);
             }
-            await setOrders(unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders);
-            defaultOrders = await unsyncOrders.length ? unsyncOrders.concat(defaultOrders) : defaultOrders;
-            defaultOrders = await defaultOrders.filter(i => i.order_date == CorrectDate(GetDate('today')));
-            await setData(defaultOrders);
-            await setRefresh(!refresh);
+
         }
-        isFocused && getDataFromDB();
-    }, [isFocused])
+       getDataFromDB();
+    }, [])
 
     return(
         <View style={{height: '100%'}}>
@@ -216,6 +235,7 @@ export const PkoScreen = ({navigation}) => {
 
                                 return(
                                 <TouchableOpacity
+                                    style={ {backgroundColor: item.local ? 'orange': ''}}
                                     onPress={() => {
                                         showItemModal(item)
                                     }}
@@ -250,7 +270,7 @@ export const PkoScreen = ({navigation}) => {
                                                 />
                                             </View>
                                         }
-                                        <Text style={[style.itemText, , {maxWidth: '25%'}]}>
+                                        <Text style={[style.itemText, {maxWidth: '25%'}]}>
                                             {item.order_date}
                                         </Text>
                                     </View>
@@ -282,6 +302,7 @@ export const PkoScreen = ({navigation}) => {
                 setVisible={filterVisibleChanger}
                 callback={filter}
             />
+            <Loading visible={loading}/>
         </View>
     )
 }

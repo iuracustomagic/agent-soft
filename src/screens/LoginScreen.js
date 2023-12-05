@@ -74,8 +74,8 @@ export const LoginScreen = ({navigation}) => {
         setLoading(true);
           console.log('nextScreen начало Auth')
         const tryAuth = await Auth(login, pass);
-          console.log('nextScreen конец Auth')
-        if (tryAuth?.status === "ok"){
+          console.log(JSON.parse(JSON.stringify(tryAuth)))
+        if (JSON.parse(JSON.stringify(tryAuth)).status === "ok"){
           await AsyncStorage.setItem('@login', login);
           await AsyncStorage.setItem('@pass', pass);
           await AsyncStorage.setItem('@token', tryAuth.token);
@@ -123,7 +123,7 @@ export const LoginScreen = ({navigation}) => {
         />
       </View>
       <Loading visible={loading} text='Синхронизация'/>
-      <Text style={styles.version}>v1.4 {ver}</Text>
+      <Text style={styles.version}>v1.5 {ver}</Text>
     </View>
   )
 }

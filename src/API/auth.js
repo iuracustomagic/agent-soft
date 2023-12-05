@@ -9,6 +9,26 @@ export const Auth = async (login, password) => {
     });
     console.log('login data', data)
     console.log('url', currentUrl + '/api/auth/login')
+
+    // var myHeaders = new Headers();
+    // myHeaders.append("Content-Type", "application/json");
+    //
+    // var raw = JSON.stringify({
+    //     "email": "maltev_virgiliu@agg.md",
+    //     "password": "7230"
+    // });
+    //
+    // var requestOptions = {
+    //     method: 'POST',
+    //     headers: myHeaders,
+    //     body: raw,
+    //     redirect: 'follow'
+    // };
+    //
+    // fetch("http://10.100.107.7:7735/Exchange/hs/api/auth/login", requestOptions)
+    //     .then(response => response.text())
+    //     .then(result => result)
+    //     .catch(error => console.log('error', error));
     return await fetch(currentUrl + '/api/auth/login', {
         method: 'post',
         headers: {
@@ -17,8 +37,7 @@ export const Auth = async (login, password) => {
         body: data
     })
         .then((response) => {
-            //console.log(response.json())
-            return response.json()
+          return response.json()
         })
         .catch((error) => {console.log(error.message)});
 

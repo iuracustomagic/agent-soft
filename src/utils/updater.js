@@ -30,14 +30,15 @@ import {
     createTableUnsyncReturns,
     getAllItems
 } from "../db/db";
+import {CorrectDate, GetDate} from "./GetDate";
 
 
 export default async function updater(){
     try {
         const token = await AsyncStorage.getItem('@token');
-        const preSync = await PreSync(token);
-        console.log('preSync',preSync);
-        if (preSync.status === 'ok'){
+        // const preSync = await PreSync(token);
+        // console.log('preSync',preSync);
+        // if (preSync.status === 'ok'){
             Toast.show('Выполняется синхронизация. Это может занять некоторое время.');
             const nomenclaturesToAdd = await GetNomenclatures(token);
             console.log('-----------------------NOMENCLATURES')
@@ -186,7 +187,9 @@ export default async function updater(){
 
             if (returns.status === 'ok'){
                 await createTableReturns(db, 'returns');
+                await createTableReturns(db, 'todayReturns');
                 await clearTable(db, 'returns');
+                await clearTable(db, 'todayReturns');
 
                 if (returns.orders.length > 0){
                     await returns.orders.map(i => {
@@ -211,6 +214,8 @@ export default async function updater(){
 
                     await addNewItemsToReturns(db, 'returns', returns.orders);
 
+                    const todayReturns =  returns.orders.filter(i => i.order_date == CorrectDate(GetDate('today')))
+                    await addNewItemsToReturns(db, 'todayReturns', todayReturns);
                 }
             }
             else
@@ -218,7 +223,9 @@ export default async function updater(){
 
             if (pkos.status === 'ok'){
                 await createTablePKO(db, 'pko');
+                await createTablePKO(db, 'todayPko');
                 await clearTable(db, 'pko');
+                await clearTable(db, 'todayPko');
 
                 if (pkos.cash_order_receipts.length > 0){
                     await pkos.cash_order_receipts.map(i => {
@@ -244,6 +251,8 @@ export default async function updater(){
                     })
 
                     await addNewItemsToPKO(db, 'pko', pkos.cash_order_receipts);
+                    const todayPko =  pkos.cash_order_receipts.filter(i => i.order_date == CorrectDate(GetDate('today')))
+                    await addNewItemsToPKO(db, 'todayPko', todayPko);
                 }
             }
             else
@@ -251,7 +260,9 @@ export default async function updater(){
 
             if (requests.status === 'ok'){
                 await createTableRequests(db, 'requests');
+                await createTableRequests(db, 'todayRequests');
                 await clearTable(db, 'requests');
+                await clearTable(db, 'todayRequests');
                 if (requests.orders.length > 0){
                     await requests.orders.map(i => {
                         var client = clientsToAdd.clients.find(c => c.id === i.client_id);
@@ -272,7 +283,9 @@ export default async function updater(){
                         i.order_date = i.created_at.substring(0, 10);
                     })
                     await addNewItemsToRequests(db, 'requests', requests.orders);
-                    // console.log('addNewItemsToRequests', requests)
+                    const todayOrders =  requests.orders.filter(i => i.order_date == CorrectDate(GetDate('today')))
+                    await addNewItemsToRequests(db, 'todayRequests', todayOrders);
+                    console.log('addNewItemsToRequests todayRequests', todayOrders)
                     Toast.show('Заявки добавлены');
                 }
             }
@@ -281,7 +294,7 @@ export default async function updater(){
             //const items = await getAllItems(db, 'nomenclatures')
             //console.log(items);
             return true;
-        }
+        // }
     } catch (e) {
         console.log(e.message)
     }

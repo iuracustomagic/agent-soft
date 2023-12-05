@@ -17,11 +17,11 @@ import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
 import {
     addNewItemsToPKO,
     addNewItemsToUnsyncPKO,
-    createTablePKO, createTableUnsyncPKO, createTableUnsyncRequests,
+    createTablePKO,
     deleteItem,
-    deleteTable,
     getAllItems,
-    getDBConnection
+    getDBConnection,
+    updatePko
 } from '../db/db';
 import { SupplierPicker } from '../components/modals/SupplierPicker';
 import {GetCashOrders, SendNewCashOrder, ValidToken} from '../API/api';
@@ -33,7 +33,7 @@ import { ClientPickerAll } from '../components/modals/ClientPickerAnotherEdition
 import {openDatabase} from "expo-sqlite";
 import { NetworkContext } from '../context';
 
-export const NewPkoScreen = ({navigation}) => {
+export const EditPkoScreen = ({navigation, route}) => {
 
     const [clientPickerVisible, setClientPickerVisible] = useState(false);
     const [storePickerVisible, setStorePickerVisible] = useState(false);
@@ -44,15 +44,17 @@ export const NewPkoScreen = ({navigation}) => {
     const [client, setClient] = useState({});
     const [dbClients, setDBClients] = useState([]);
     const [dbSuppliers, setDBSuppliers] = useState([]);
-    const [sum, setSum] = useState(0);
-    const [comment, setComment] = useState('');
+    const [sum, setSum] = useState(JSON.parse(JSON.stringify(route.params.amount)));
+    const [comment, setComment] = useState(JSON.parse(JSON.stringify(route.params.comment)));
     const [loading,setLoading] = useState(false);
     const [sureModal, setSureModal] = useState(false);
     const [sureModalText, setSureModalText] = useState('');
     const [sureModalValue, setSureModalValue] = useState('');
     const [stores, setStores] = useState([]);
-    const [docType, setDocType] = useState(0);
+    const [docType, setDocType] = useState(JSON.parse(JSON.stringify(route.params.doc_type)));
     const {network} = useContext(NetworkContext);
+
+    const{ doc_type, client_id, client_guid, client_name, supplier_id, supplier_name, supplier_guid, amount, id, store_id, store_guid  }=JSON.parse(JSON.stringify(route.params))
 
     function sureModalVis(value, type){
         if (type){
@@ -98,6 +100,25 @@ export const NewPkoScreen = ({navigation}) => {
         }
     }
     useEffect(() => {
+        if(client_name) {
+            setReadyClient({
+                id: store_id,
+                client_id,
+                client_guid,
+                name: client_name,
+                guid: store_guid
+            })
+        }
+
+        if(supplier_id) {
+            setChosenSupplier({
+                id: supplier_id,
+                supplier_name,
+                supplier_guid,
+            })
+        }
+
+
         const db = openDatabase('db.db' );
 
         async function getDataFromDB(){
@@ -150,7 +171,7 @@ export const NewPkoScreen = ({navigation}) => {
             setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
             setDBSuppliers(suppliers);
 
-            let storesToAdd = [];
+            const storesToAdd = [];
             clientsToAdd.map(i => {
                 if (i.stores.length && i.stores != 'null'){
                     i.stores = JSON.parse(i.stores);
@@ -170,7 +191,6 @@ export const NewPkoScreen = ({navigation}) => {
                 }
                 return 0;
             })
-
             setStores(storesToAdd);
         }
         console.log('network', network)
@@ -182,6 +202,24 @@ export const NewPkoScreen = ({navigation}) => {
         }
     }, [network]);
 
+    useEffect(()=>{
+        if(stores.length>0) {
+            let choosedStore = stores.find(s=>s.client_id ===client_id)
+            chooseStore(choosedStore)
+            setLoading(false)
+        } else {
+            setLoading(true)
+        }
+        console.log('dbSuppliers', dbSuppliers)
+    }, [stores])
+
+    useEffect(()=>{
+        if(dbSuppliers.length>0) {
+            let choosedSupplier = dbSuppliers.find(s=>s.id ===supplier_id)
+            chooseSupplier(choosedSupplier)
+
+        }
+    }, [ dbSuppliers])
 
     function chooseStore(store){
         // console.log('chooseStore', store)
@@ -193,97 +231,47 @@ export const NewPkoScreen = ({navigation}) => {
         setChosenSupplier(sup);
         setSupplierPickerVisible(false);
     }
-
+    function goBack(){
+        navigation.goBack();
+    }
     async function sendRequest(){
-        if (readyClient.client_id && sum > 0 && chosenSupplier.id){
-            const token = await AsyncStorage.getItem('@token');
+        if (readyClient.client_id || client_id && sum > 0 || amount){
             setLoading(true);
             const db = await getDBConnection();
-
+            console.log('after db connection')
             let reqUnsync = {
                 "client_id": readyClient.client_id,
                 "client_guid": readyClient.client_guid,
+                "client_name": readyClient.client_name,
                 "store_id": readyClient.id,
                 "store_guid": readyClient.guid,
-                "organization_id": chosenSupplier.id,
-                "organization_guid": chosenSupplier.guid,
+                "store_name": readyClient.name,
+                "supplier_id": chosenSupplier.id,
+                "supplier_guid": chosenSupplier.guid,
+                "supplier_name": chosenSupplier.name,
                 "amount": sum,
                 "doc_type": docType, // 0 или 1, 0 - cash, 1 - invoice
-                "exported": 0, // 0 или 1
                 "comment": comment.replace(/[']+/g, "''")
             }
-            let req = {};
-            Object.assign(req, reqUnsync);
 
 
-            if (network) {
-                try {
-                    const resp = await SendNewCashOrder(token, req);
-                    if (resp.status === 'ok'){
-                        const orderResponse = resp.order
-                        let clientsToAdd = await getAllItems(db, 'clients');
-                        let suppliers = await getAllItems(db, 'suppliers');
-                        // await createTablePKO(db, 'pko');
+           try {
+               setLoading(true);
+               console.log('unsyncPko', reqUnsync)
+              await updatePko(db, 'unsyncPko', reqUnsync, id )
 
-                        const replace=(i)=> {
-                            const supplier = suppliers.find(s => s.id == i.organization_id);
-                            const client = clientsToAdd.find(c => c.id == i.client_id);
-                            if (client)
-                                i.client_name = client.name.replace(/[']+/g, "''");
-                            else
-                                i.client_name = 'noname'
-                            if (client)
-                                if (client.stores != 'null')
-                                    if (JSON.parse(client.stores).find(s => s.id == i.store_id))
-                                        i.store_name = JSON.parse(client.stores).find(s => s.id == i.store_id).name.replace(/[']+/g, "''");
-                                    else
-                                        i.store_name = 'null';
-                                else
-                                    i.store_name = 'null'
-                            i.supplier_name = supplier.name;
-                            i.supplier_id = supplier.id;
-                            i.supplier_guid = supplier.guid;
-                            i.order_date = i.created_at.substring(0, 10);
-                            i.comment = i.comment.replace(/[']+/g, "''");
-                        }
-
-                            replace(orderResponse)
-                            await addNewItemsToPKO(db, 'pko',[orderResponse]);
-                    }
-                    else{
+                   } catch (e) {
+                       console.log(e)
+                   } finally {
                         setLoading(false);
-                        Toast.show('ПКО не отправлен');
-                        console.log(resp)
-                    }
+                       navigation.replace('PKOScreen');
+                       Toast.show('ПКО успешно исправлен');
+                   }
 
-                } catch (e) {
-                    console.log(e)
-                }finally {
-                    setLoading(false);
-                    Toast.show('ПКО успешно отправлен');
-                    navigation.replace('PKOScreen');
-                }
-            } else {
+                   //navigation.navigate('PKOScreen');
 
-                reqUnsync.client_name = readyClient.client_name;
-                reqUnsync.store_name = readyClient.name;
-                reqUnsync.supplier_name = chosenSupplier.name;
-                reqUnsync.supplier_id = chosenSupplier.id;
-                reqUnsync.supplier_guid = chosenSupplier.guid;
-                reqUnsync.sync_status = false;
-                reqUnsync.order_date = CorrectDate(GetDate('today'));
+               }
 
-                reqUnsync = [reqUnsync];
-                // await deleteTable(db, 'unsyncPKO')
-                // await createTableUnsyncPKO(db, 'unsyncPKO')
-                await addNewItemsToUnsyncPKO(db, 'unsyncPKO', reqUnsync);
-                setLoading(false);
-                Toast.show('ПКО сохранен на телефоне');
-                navigation.replace('PKOScreen');
-            }
-
-
-        }
         else
             Toast.show('Не указан клиент, поставщик или сумма')
 
@@ -291,7 +279,9 @@ export const NewPkoScreen = ({navigation}) => {
     function setterSum(value){
         setSum(parseFloat(value));
     }
-
+    function setterComment(value){
+        setComment(value);
+    }
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
         return () => backHandler.remove();
@@ -308,6 +298,7 @@ export const NewPkoScreen = ({navigation}) => {
                     >
                         <DefaultCheckBoxWithText
                             text={consts.TYPE_OF_DOCUMENT}
+                            checked={doc_type}
                             onChange={(value) => {
                                 if (value)
                                     setDocType(1)
@@ -341,12 +332,14 @@ export const NewPkoScreen = ({navigation}) => {
                             keyboardType='numeric'
                             onEndEditing={setterSum}
                             mt={15}
+                            value={amount}
                         />
                         <DefaultTextInput
                             placeholder={'Комментарий'}
+                            // onEndEditing={setterComment}
+                            mt={15}
                             value={comment}
                             onChangeText={setComment}
-                            mt={15}
                         />
                     </ScrollView>
                 </View>
@@ -366,18 +359,7 @@ export const NewPkoScreen = ({navigation}) => {
                     />
                 </View>
             </View>
-            {/* <ClientPicker
-                setVisible={clientPickerVisibility}
-                visible={clientPickerVisible}
-                clients={dbClients}
-                chooseClient={chosenClientHandler}
-            />
-            <StorePicker
-                setVisible={storePickerVisibility}
-                visible={storePickerVisible}
-                stores={chosenClient}
-                chooseStore={chooseStore}
-            /> */}
+
             <ClientPickerAll
                 setVisible={clientPickerVisibility}
                 visible={clientPickerVisible}

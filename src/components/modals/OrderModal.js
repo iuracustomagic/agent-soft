@@ -1,32 +1,113 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity } from 'react-native';
+import React, {useState, useMemo, useEffect, useContext} from 'react';
+import { ActivityIndicator, Modal, StyleSheet, View, FlatList, Text, TouchableOpacity, TouchableHighlight } from 'react-native';
 import AntIcon from "react-native-vector-icons/AntDesign";
 import { consts } from '../../consts/const';
-import { getAllItems, getDBConnection } from '../../db/db';
+import {deleteItem, getAllItems, getDBConnection} from '../../db/db';
 import { DefaultBtn } from '../DefaultBtn';
 import { DefaultTextInput } from '../DefaultTextInput';
+import Toast from "react-native-simple-toast";
+import {SureModal} from "./SureModal";
 
 
 
 export const OrderModal = ({visible, setVisible, item, productList, pko, returned,  navigation}) => {
 
+    const [sureModal, setSureModal] = useState(false);
+    const [sureModalText, setSureModalText] = useState('');
+    const [sureModalValue, setSureModalValue] = useState('');
 
+    async function sureModalPicked(){
+        // console.log(sureModalValue)
+        switch (sureModalValue){
+            case 'delete':
+              await  deleteRequest();
+                break;
+            default:
+                hide()
+        }
+    }
+    function sureModalVis(value, type){
+        if (type){
+            setSureModalValue(type);
+            switch (type){
+                case 'delete':
+                    setSureModalText('Вы уверены, что хотите удалить?');
+                    break;
+
+            }
+        }
+        setSureModal(value);
+    }
+
+    const onDelete = ()=>{
+        console.log('onDelete')
+        setSureModalValue('delete');
+        setSureModal(true);
+        setSureModalText('Вы уверены, что хотите удалить?');
+    }
 
     const hide = () => {
         //console.log(list1)
         setVisible(false);
     }
 
-const copy = () =>{
-        hide()
-    if(pko) {
-        console.log('pko',pko)
+        const copy = () =>{
+                hide()
+            if(pko) {
+                console.log('pko',pko)
+                console.log('item',item)
+                navigation.navigate('CopyPkoScreen', item);
+            } else {
+                navigation.navigate('CopyRequestScreen', item);
+            }
+        }
+
+    const edit = () =>{
+        console.log('edit')
         console.log('item',item)
-        navigation.navigate('CopyPkoScreen', item);
-    } else {
-        navigation.navigate('CopyRequestScreen', item);
+
+        hide()
+        if(returned) {
+
+            navigation.navigate('EditReturnScreen', item);
+        }
+       else if(pko) {
+            console.log('pko', pko)
+            navigation.navigate('EditPkoScreen', item);
+        } else {
+            console.log('pko', pko)
+            navigation.navigate('EditRequestScreen', item);
+        }
     }
-}
+
+    const deleteRequest = async() =>{
+
+        const db = await getDBConnection();
+        try{
+            if(returned) {
+                await deleteItem(db, 'unsyncReturns', item.id )
+                Toast.show('Возврат успешно удален');
+                navigation.replace('ReturnScreen');
+            } else if(pko) {
+                await deleteItem(db, 'unsyncPKO', item.id )
+                Toast.show('ПКО успешно удален');
+                navigation.replace('PKOScreen');
+            } else {
+                await deleteItem(db, 'unsyncReqs', item.id )
+                Toast.show('Заявка успешно удалена');
+                navigation.replace('RequestScreen');
+            }
+
+        }catch (e) {
+            console.log(e)
+        }finally {
+            hide()
+        }
+
+        // console.log('item',item)
+
+    }
+
 
     if (!visible)
         return null;
@@ -40,14 +121,42 @@ const copy = () =>{
             //onShow={onShow}
         >
             <View style={[style.center, style.background]}>
-                <TouchableOpacity style={style.copyContainer} onPress={copy}>
-                    <AntIcon
-                        size={55}
-                        name='copy1'
-                        color='black'
-                    />
-                </TouchableOpacity>
-                <Text style={style.orgName}>Клиент: {item.client_name}</Text>
+                {/*<TouchableOpacity style={style.copyContainer} onPress={copy}>*/}
+                {/*    <AntIcon*/}
+                {/*        size={55}*/}
+                {/*        name='copy1'*/}
+                {/*        color='black'*/}
+                {/*    />*/}
+                {/*</TouchableOpacity>*/}
+                {item.local ?<View style={style.btnContainer}>
+                        <TouchableOpacity style={style.editContainer} onPress={edit}>
+                            <AntIcon
+                                size={45}
+                                name='edit'
+                                color='blue'
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={style.deleteContainer} onPress={onDelete}>
+                            <AntIcon
+                                size={45}
+                                name='delete'
+                                color='red'
+                            />
+                        </TouchableOpacity>
+                    </View>:
+                    <TouchableOpacity style={style.copyContainer} onPress={copy}>
+                        <AntIcon
+                            size={55}
+                            name='copy1'
+                            color='black'
+                        />
+                    </TouchableOpacity>
+                }
+
+    <Text style={style.orgName}>Клиент: {item.client_name}</Text>
+
+
+
                 <Text style={style.storeName}>{item.store_name}</Text>
                 {pko &&
                 <Text style={style.orgName}>Поставщик: {item.supplier_name}</Text>
@@ -68,7 +177,7 @@ const copy = () =>{
                     "print_cert": printCert, // 0 или 1
                     "promo": promo, // 0 или 1 */}
                 {
-                    item.doc_type == true ?
+                    item.doc_type === true ?
                         <Text style={style.dateSum}>Тип документа:
                             <AntIcon
                                 size={16}
@@ -80,7 +189,7 @@ const copy = () =>{
                         <></>
                 }
                 {
-                    item.check_required == true ?
+                    item.check_required === true ?
                         <Text style={style.dateSum}>Счет с чеком:
                             <AntIcon
                                 size={16}
@@ -92,7 +201,7 @@ const copy = () =>{
                         <></>
                 }
                 {
-                    item.print_cert == true ?
+                    item.print_cert === true ?
                         <Text style={style.dateSum}>Печать сертификата:
                             <AntIcon
                                 size={16}
@@ -104,7 +213,7 @@ const copy = () =>{
                         <></>
                 }
                 {
-                    item.promo == true ?
+                    item.promo === true ?
                         <Text style={style.dateSum}>Акция:
                             <AntIcon
                                 size={16}
@@ -149,6 +258,12 @@ const copy = () =>{
                     text={consts.CLOSE}
                 />
             </View>
+            <SureModal
+                visible={sureModal}
+                setVisible={sureModalVis}
+                callback={sureModalPicked}
+                text={sureModalText}
+            />
         </Modal>
     )
 }
@@ -188,6 +303,7 @@ const style = StyleSheet.create({
         marginTop: 8
     },
     orgName: {
+        width: '80%',
         fontSize: 20,
         color: 'black',
         textDecorationLine: 'underline'
@@ -213,5 +329,22 @@ const style = StyleSheet.create({
         position: 'absolute',
         top: 20,
         right: 20,
+    },
+    editContainer: {
+       marginRight: 15,
+    },
+    deleteContainer: {
+
+    },
+    btnContainer: {
+        // position: 'absolute',
+        // top: 20,
+        // right: 20,
+        flex: 0.2,
+        // marginTop: 10,
+        flexDirection: 'row',
+
+        alignItems: 'center',
+        justifyContent: 'space-between',
     }
 })

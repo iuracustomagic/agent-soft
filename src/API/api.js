@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { currentUrl } from '../consts/const';
 
 export const PreSync = async (token) => {
+    console.log('PreSync token', token)
     return await fetch(currentUrl + '/api/pre-sync', {
         method: 'get',
         headers: {
@@ -11,7 +12,7 @@ export const PreSync = async (token) => {
         },
     })
         .then((response) => {
-            //console.log(response.json())
+
             return response.json();
         })
         .catch((error) => {return {
@@ -21,20 +22,21 @@ export const PreSync = async (token) => {
 
 }
 export const ValidToken = async (token) => {
-
+    console.log('ValidToken token', token)
         const response =  await fetch(currentUrl + '/api/validate-token', {
             method: 'get',
             headers: {
                 "Authorization": "Bearer " + token
             },
         })
+    // console.log('PreSync response',await response.json())
         return await response.json()
 
 }
 
 
 export const GetNomenclatures = async (token) => {
-
+    console.log('GetNomenclatures token', token)
     return await fetch(currentUrl + '/api/nomenclature/list', {
         method: 'get',
         headers: {
@@ -43,7 +45,7 @@ export const GetNomenclatures = async (token) => {
         },
     })
         .then((response) => {
-            //console.log(response.json())
+
             return response.json();
         })
         .catch((error) => {return {
@@ -54,7 +56,7 @@ export const GetNomenclatures = async (token) => {
 }
 
 export const GetClients = async (token) => {
-    // console.log(token)
+
     return await fetch(currentUrl + '/api/clients/list', {
         method: 'get',
         headers: {
@@ -63,7 +65,7 @@ export const GetClients = async (token) => {
         },
     })
         .then((response) => {
-            //console.log(response.json())
+
             return response.json();
         })
         .catch((error) => {return {
@@ -83,7 +85,6 @@ export const GetSuppliers = async (token) => {
         },
     })
         .then((response) => {
-            // console.log('GetSuppliers', response.json())
             return response.json();
         })
         .catch((error) => {return {
@@ -102,7 +103,7 @@ export const GetCategories = async (token) => {
         },
     })
         .then((response) => {
-            // console.log('GetCategories', response.json())
+
             return response.json();
         })
         .catch((error) => {return {
@@ -120,7 +121,7 @@ export const GetRequests = async (token) => {
         },
     })
         .then((response) => {
-            // console.log('GetRequests', response.json())
+
             return response.json();
         })
         .catch((error) => {return {
@@ -130,7 +131,7 @@ export const GetRequests = async (token) => {
 
 }
 export const GetReturns = async (token) => {
-    return await fetch(currentUrl + '/api/returns/list ', {
+    return await fetch(currentUrl + '/api/returns/list', {
         method: 'get',
         headers: {
             "Content-Type": "application/json",
@@ -138,7 +139,6 @@ export const GetReturns = async (token) => {
         },
     })
         .then((response) => {
-            // console.log('GetReturns', response)
             return response.json();
         })
         .catch((error) => {return {
@@ -185,8 +185,9 @@ export const GetCashOrders = async (token) => {
 }
 
 export const SendNewRequest = async (token, data) => {
-     console.log(token);
-    console.log('data', data);
+
+     // console.log(JSON.stringify(data));
+
     return await fetch(currentUrl + '/api/order/new', {
         method: 'post',
         headers: {
@@ -224,8 +225,7 @@ export const SendNewRequest = async (token, data) => {
 
 }
 export const SendNewReturn = async (token, data) => {
-    /* console.log(token);
-    console.log(data); */
+
    return await fetch(currentUrl + '/api/returns/new', {
         method: 'post',
         headers: {
@@ -235,7 +235,6 @@ export const SendNewReturn = async (token, data) => {
         body: JSON.stringify(data)
     })
         .then((response) => {
-            // console.log(response)
             return response.json();
         })
         .catch((error) => {return {
@@ -245,8 +244,7 @@ export const SendNewReturn = async (token, data) => {
 
 }
 export const SendNewCashOrder = async (token, data) => {
-    /* console.log(token);
-    console.log(data); */
+
    return await fetch(currentUrl + '/api/cash-order/new', {
         method: 'post',
         headers: {
@@ -256,7 +254,6 @@ export const SendNewCashOrder = async (token, data) => {
         body: JSON.stringify(data)
     })
         .then((response) => {
-            console.log(response)
             return response.json();
         })
         .catch((error) => {return {
@@ -266,8 +263,7 @@ export const SendNewCashOrder = async (token, data) => {
 
 }
 export const SendLogError = async (data) => {
-    /* console.log(token);
-    console.log(data); */
+
     return await fetch(currentUrl + '/api/log/error', {
         method: 'post',
         headers: {
@@ -276,7 +272,6 @@ export const SendLogError = async (data) => {
         body: JSON.stringify(data)
     })
         .then((response) => {
-            // console.log(response)
             response.json();
         })
         .catch((error) => {return {
@@ -287,8 +282,7 @@ export const SendLogError = async (data) => {
 }
 
 export const GetBalance = async (token) => {
-    console.log('token ', token);
-    // console.log(data);
+
     return await fetch(currentUrl + '/api/balance/list', {
         method: 'get',
         headers: {
@@ -297,7 +291,7 @@ export const GetBalance = async (token) => {
         },
     })
         .then((response) => {
-            console.log('sent response')
+
             return response.json();
         })
         .catch(async(error) => {
@@ -326,8 +320,7 @@ export const GetBalance = async (token) => {
 }
 
 export const Ping = async (token) => {
-    /* console.log(token);
-    console.log(data); */
+
     return await fetch(currentUrl + '/api/ping', {
         method: 'get',
         headers: {
@@ -344,7 +337,6 @@ export const Ping = async (token) => {
 
 export const SendUnsyncRequest = async (token, data) => {
 
-    // console.log('data', data);
     return await fetch(currentUrl + '/api/orders/send-unsync-order', {
         method: 'post',
         headers: {
@@ -379,6 +371,112 @@ export const SendUnsyncRequest = async (token, data) => {
                 'status': 'got error',
                 'message': error.message,
             }
+        });
+
+}
+
+export const SendDeleteRequest = async (token, data) => {
+
+    return await fetch(currentUrl + '/api/orders/delete-orders', {
+        method: 'post',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(data)
+    })
+        .then((response) => {
+
+            return response.json();
+        })
+        .catch(async(error) => {
+            console.log('SendDeleteRequest !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
+            return {
+                'status': 'got error',
+                'message': error.message,
+            }
+        });
+
+}
+
+export const SendDeleteReturns = async (token, data) => {
+
+    return await fetch(currentUrl + '/api/returns/delete-orders', {
+        method: 'post',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(data)
+    })
+        .then((response) => {
+
+            return response.json();
+        })
+        .catch(async(error) => {
+            console.log('SendDeleteReturns !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
+            return {
+                'status': 'got error',
+                'message': error.message,
+            }
+        });
+
+}
+
+export const SendDeletePko = async (token, data) => {
+
+    return await fetch(currentUrl + '/api/cash-order/delete-orders', {
+        method: 'post',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(data)
+    })
+        .then((response) => {
+
+            return response.json();
+        })
+        .catch(async(error) => {
+            console.log('SendDeletePko !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
+            return {
+                'status': 'got error',
+                'message': error.message,
+            }
+        });
+
+}
+
+export const SendEditRequest = async (token, data) => {
+    console.log(token);
+    console.log(data.id);
+
+    return await fetch(currentUrl + '/api/order/'+data.id, {
+        method: 'post',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify(data)
+    })
+        .then((response) => {
+
+            return response.json();
+        })
+        .catch(async(error) => {
+            console.log('SendEditRequest !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            const login = await AsyncStorage.getItem('@login');
+            var err = {
+                "email": login,
+                "breakpoint": 'After order. Token: ' + token,
+                "name": error.name,
+                "message": error.message
+            }
+            console.log(err);
+
         });
 
 }

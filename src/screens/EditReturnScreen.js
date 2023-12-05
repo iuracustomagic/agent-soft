@@ -26,11 +26,11 @@ import {
     createTableRequests,
     createTableReturns,
     createTableUnsyncRequests,
-    createTableUnsyncReturns,
     deleteItem,
     deleteTable,
     getAllItems,
-    getDBConnection
+    getDBConnection,
+    updateReturn
 } from '../db/db';
 import { CounterForProductPicker } from '../components/modals/CounterForProductPicker';
 import { ClientPicker } from '../components/modals/ClientPicker';
@@ -48,10 +48,9 @@ import { NetworkContext } from '../context';
 import {openDatabase} from "expo-sqlite";
 import {replace, replaceStores} from "../utils/Helper";
 
-export const NewReturnScreen = ({navigation}) => {
+export const EditReturnScreen = ({navigation, route}) => {
 
-    // const [data, setData] = useState([{name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}, {name: 'name_1', sum: 120000}, {name: 'name_2', sum: 180000}, {name: 'name_3', sum: 2250000}]);
-    const [activeBtn, setActiveBtn] = useState(1);
+
     const [products, setProducts] = useState([]);
     const [dbProducts, setDBProducts] = useState([]);
     const [toShowProducts, setToShowProducts] = useState([]);
@@ -59,15 +58,13 @@ export const NewReturnScreen = ({navigation}) => {
     const [productPickerVisible, setProductPickerVisible] = useState(false);
     const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
     const [clientPickerVisible, setClientPickerVisible] = useState(false);
-    const [storePickerVisible, setStorePickerVisible] = useState(false);
+
     const [counterForProductPickerVisible, setCounterForProductPickerVisible] = useState(false);
     const [chosenProduct, setChosenProduct] = useState({});
     const [chosenCategory, setChosenCategory] = useState({});
-    const [chosenClient, setChosenClient] = useState({});
+
     const [readyClient, setReadyClient] = useState({});
-    const [chosenStore, setChosenStore] = useState({});
-    const [client, setClient] = useState({});
-    const [clients, setClients] = useState({});
+
     const [loading, setLoading] = useState(false);
     const [moddedCategories, setModdedCategories] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -79,20 +76,14 @@ export const NewReturnScreen = ({navigation}) => {
     const [sureModalText, setSureModalText] = useState('');
     const [sureModalValue, setSureModalValue] = useState('');
     const [totalSum, setTotalSum] = useState(0);
-    const [docType, setDocType] = useState(0);
+    const [docType, setDocType] = useState(JSON.parse(JSON.stringify(route.params.doc_type)));
+    const [docNumber, setDocNumber] = useState(JSON.parse(JSON.stringify(route.params.doc_number)));
     const [refSum, setRefSum] = useState(false);
-    const [comment, setComment] = useState('');
-    const [docNumber, setDocNumber] = useState(0);
+    const [comment, setComment] = useState(JSON.parse(JSON.stringify(route.params.comment)));
     const {network} = useContext(NetworkContext);
 
-    function changeActive(value){
-        setActiveBtn(value)
-        // console.log(GetDate('tomorrow'));
-    }
+    const{ doc_type, client_name, list, store_id, client_guid, client_id, store_guid, id, return_name  }=JSON.parse(JSON.stringify(route.params))
 
-    function changer(value){
-        //console.log(value)
-    }
     function typePickerVisibility(value){
         setTypePickerVisible(value);
     }
@@ -129,229 +120,54 @@ export const NewReturnScreen = ({navigation}) => {
         }
         summator();
     }, [products, refSum])
-    function productPickerVisibility(value){
-        setProductPickerVisible(value);
-    }
-    function clientPickerVisibility(value){
-        setClientPickerVisible(value);
-    }
-    function storePickerVisibility(value){
-        setStorePickerVisible(value);
-    }
-    function counterProductPickerVisibility(value){
-        setCounterForProductPickerVisible(value);
-    }
-    function categoryPickerVisibility(value){
-        if (Object.keys(readyClient).length)
-            setCategoryPickerVisible(value);
-        else
-            Toast.show('Выберите торговую точку');
-    }
-    function addToList(data){
-        if (!products.find((e) => e.nomenclature_id === data.nomenclature_id)){
-            setProducts([...products, data]);
-            Toast.show('Продукт добавлен');
-            alrdy(data.nomenclature_id, true, data.quantity);
-        }
-        else{
-            const indexCat = products.findIndex(i => i.nomenclature_id == data.nomenclature_id);
-            products[indexCat].quantity = data.quantity;
-            alrdy(data.nomenclature_id, false);
-            alrdy(data.nomenclature_id, true, data.quantity);
-            setRefSum(!refSum);
-            Toast.show('Продукт обновлен');
-        }
-    }
-    function chosenProductHandler(data){
-        setChosenProduct(data);
-        setCounterForProductPickerVisible(true);
-    }
-    function chosenCategoryHandler(data){
-        setChosenCategory(data);
-        var newAr = dbProducts.filter(i => i.category_id == data);
-        setToShowProducts(newAr);
-        setProductPickerVisible(true);
-    }
-    async function chosenClientHandler(data){
-        //console.log(data)
-        if (data.stores != 'null'){
-            await setChosenClient(JSON.parse(data.stores));
-            await setClient(data);
-            await setStorePickerVisible(true);
-        }
 
-    }
+    useEffect(()=>{
+
+        if(stores.length>0) {
+            let choosedStore = stores.find(s=>s.client_id ===Number(client_id))
+            chooseStore(choosedStore)
+            setLoading(false)
+        } else {
+            setLoading(true)
+        }
+    }, [stores])
+
+
     useEffect(() => {
-        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-        return () => backHandler.remove();
-    }, [])
-    function removeProduct(id){
-        const items = products.filter(item => item.nomenclature_id != id);
-        setProducts(items);
-        alrdy(id, false);
-    }
-    async function chooseStore(store){
+        console.log('item ', route.params)
 
-        var badPrices = 0;
-        var nmcls_count = 0;
-        // console.log(store)
-        dbProducts.map(i => {
-            var spt = store.price_types.find(spts => spts.organization_id == i.organization_id);
-            var real_price = 0;
-            if (spt){
-                if (i.price){
-                    var pf = i.price.find(p => p.price_type_guid == spt.guid);
-                    if (pf)
-                        real_price = pf.price;
-                }
-            }
-            i.real_price = real_price;
-            if (i.real_price == 0)
-                badPrices++;
-            nmcls_count++;
-        })
-
-        products.map(i => {
-            i.price = dbProducts.find(p => i.nomenclature_id == p.id).real_price
-        })
-        if (store.blockedSups){
-            moddedCategories.map(mc => {
-                if (store.blockedSups.find(bs => bs.id == mc.id))
-                    return mc.blocked = 1;
-                else
-                    return delete mc.blocked;
+        if(client_name) {
+            setReadyClient({
+                id: store_id,
+                client_id,
+                client_guid,
+                name: client_name,
+                guid: store_guid
             })
         }
-        else
-            moddedCategories.map(mc => {
-                delete mc.blocked;
-            })
-        setReadyClient(store);
-        setClientPickerVisible(false);
-        setRefSum(!refSum);
-
-    }
-    function chooseType(type){
-        setChosenType(type);
-        setTypePickerVisible(false);
-    }
-    function goBack(){
-        navigation.goBack();
-    }
-    function alrdy(id, value, qty){
-        const indexProduct = dbProducts.findIndex(i => i.id == id);
-        dbProducts[indexProduct].already = value;
-        const product = dbProducts.find(i => i.id == id);
-        const indexCat = categories.findIndex(i => i.id == product.category_id);
-        categories[indexCat].already = value;
-        if (qty)
-            dbProducts[indexProduct].pickedQty = qty;
-        else
-            delete dbProducts[indexProduct].pickedQty
-    }
-    async function sendRequest(){
-        console.log('readyClient', readyClient)
-
-        if (readyClient.id && products.length && chosenType.guid){
-            if (products){
-                setLoading(true);
-                const token = await AsyncStorage.getItem('@token');
-                products.map(i => {
-
-                    i.return_type = chosenType.guid;
-                });
-                const db = await getDBConnection();
-
-                let reqUnsync = {
-                    "client_id": readyClient.client_id,
-                    "client_guid": readyClient.client_guid,
-                    //"client_name": readyClient.name,
-                    "store_id": readyClient.id,
-                    "store_guid": readyClient.guid,
-                    // "doc_number": docNumber,
-                    //"delivery_date": CorrectDate(GetDate('today')),
-                    "amount": totalSum,
-                    "doc_type": docType, // 0 или 1, 0 - cash, 1 - invoice
-                    "exported": 0, // 0 или 1
-                    "list": products,
-                    "comment": comment
-                }
-                let req = {};
-                Object.assign(req, reqUnsync);
-
-                console.log('SendNewReturn request', req)
-
-
-
-                if (network){
-                    const resp = await SendNewReturn(token, req);
-                    console.log('SendNewReturn response', resp)
-                    try{
-                        if(resp.status ==='ok') {
-                            const clientsToAdd = await getAllItems(db, 'clients');
-                            // await createTableReturns(db, 'returns');
-
-                            const orderResponse = resp.order
-                            // console.log('orderResponse',orderResponse)
-                            replace(clientsToAdd, orderResponse)
-                            await addNewItemsToReturns(db, 'returns', [orderResponse]);
-                            await addNewItemsToReturns(db, 'todayReturns', [orderResponse]);
-
-                            Toast.show('Возврат успешно отправлен');
-                            // setLoading(false);
-                            // navigation.replace('ReturnScreen');
-
-                        }
-                        else {
-                            setLoading(false);
-                            Toast.show('Возврат не отправлен');
-                        }
-
-                    }catch (e) {
-                        console.log(e)
-                    }
-                    finally {
-                    setLoading(false);
-                    navigation.replace('ReturnScreen');
-                }
-
-                }
-                else{
-                    reqUnsync.client_name = readyClient.client_name;
-                    reqUnsync.store_name = readyClient.name;
-                    reqUnsync.order_date = CorrectDate(GetDate('today'));
-                    reqUnsync.sync_status = false;
-                    reqUnsync.doc_number = docNumber;
-                    reqUnsync.return_name = chosenType.name;
-                    reqUnsync.list = JSON.stringify(reqUnsync.list);
-                    reqUnsync.list = reqUnsync.list.replace(/[']+/g, "''");
-                    reqUnsync = [reqUnsync];
-                    await addNewItemsToUnsyncReturns(db, 'unsyncReturns', reqUnsync);
-                    Toast.show('Заявка сохранена на устройстве');
-                    setLoading(false);
-                    //navigation.navigate('ReturnScreen');
-                    navigation.replace('ReturnScreen');
-                }
-                setLoading(false);
-            }
+        let returnGuid = '';
+        if(list) {
+            returnGuid = list[0]['return_type']
+            setProducts(list)
         }
-        else
-            Toast.show('Не выбраны клиент,товары или причина');
-    }
-    useEffect(() => {
+        if(return_name) {
+            setChosenType({name: return_name, guid: returnGuid})
+        }
         const db = openDatabase('db.db' );
 
         async function getDataFromDB(){
             const token = await AsyncStorage.getItem('@token');
             try {
                 const validToken = await ValidToken(token)
+                const productsToAdd = await getAllItems(db, 'nomenclatures');
 
                 if(validToken.data === 'Token is valid') {
-                    const balances = {
-                        "status": 'not_ok'
-                    }
+                    const balances = await GetBalance(token);
+                    list.map(i=>{
+                        i = balances.balance.filter(b => b.nomenclature_id === i.id);
+                    })
 
-                    const productsToAdd = await getAllItems(db, 'nomenclatures');
+
                     productsToAdd.map(i => {
                         i.price = JSON.parse(i.price);
                         i.balance = JSON.parse(i.balance);
@@ -362,14 +178,16 @@ export const NewReturnScreen = ({navigation}) => {
                     const typesToAdd = await getAllItems(db, 'typesOfReturns');
 
                     setCategories(categories);
-                    if (balances.status == 'ok')
+                    if (balances.status === 'ok') {
                         productsToAdd.map(i => {
                             i.balance = balances.balance.filter(b => b.nomenclature_id == i.id);
                         })
+                    }
+
                     setDBProducts(productsToAdd);
                     setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
                     setTypes(typesToAdd);
-
+                    // console.log(typesToAdd);
                     const replacedStores = replaceStores(clientsToAdd)
 
                     setStores(replacedStores);
@@ -412,8 +230,6 @@ export const NewReturnScreen = ({navigation}) => {
             setDBClients(clientsToAdd.filter(i => i.total_debt <= 0));
             setTypes(typesToAdd);
             // console.log(typesToAdd);
-
-
             const replacedStores = replaceStores(clientsToAdd)
 
             setStores(replacedStores);
@@ -427,7 +243,7 @@ export const NewReturnScreen = ({navigation}) => {
                 suppliers.find(e => e.id == i.sup_id).cats.push(i)
                 //suppliers.cats.push(i)
             })
-            // console.log(suppliers);
+
             setModdedCategories(suppliers);
         }
         if(network) {
@@ -436,8 +252,167 @@ export const NewReturnScreen = ({navigation}) => {
             getDataWithoutNetwork()
 
         }
-
     }, []);
+
+
+    function productPickerVisibility(value){
+        setProductPickerVisible(value);
+    }
+    function clientPickerVisibility(value){
+        setClientPickerVisible(value);
+    }
+
+    function counterProductPickerVisibility(value){
+        setCounterForProductPickerVisible(value);
+    }
+    function categoryPickerVisibility(value){
+        if (Object.keys(readyClient).length)
+            setCategoryPickerVisible(value);
+        else
+            Toast.show('Выберите торговую точку');
+    }
+    function addToList(data){
+        if (!products.find((e) => e.nomenclature_id === data.nomenclature_id)){
+
+            setProducts([...products, data]);
+            Toast.show('Продукт добавлен');
+            alrdy(data.nomenclature_id, true, data.quantity);
+        }
+        else{
+            const indexCat = products.findIndex(i => i.nomenclature_id == data.nomenclature_id);
+            products[indexCat].quantity = data.quantity;
+            alrdy(data.nomenclature_id, false);
+            alrdy(data.nomenclature_id, true, data.quantity);
+            setRefSum(!refSum);
+            Toast.show('Продукт обновлен');
+        }
+    }
+    function chosenProductHandler(data){
+        setChosenProduct(data);
+        setCounterForProductPickerVisible(true);
+    }
+    function chosenCategoryHandler(data){
+        setChosenCategory(data);
+        var newAr = dbProducts.filter(i => i.category_id == data);
+        setToShowProducts(newAr);
+        setProductPickerVisible(true);
+    }
+
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+        return () => backHandler.remove();
+    }, [])
+    function removeProduct(id){
+        const items = products.filter(item => item.nomenclature_id != id);
+        setProducts(items);
+        alrdy(id, false);
+    }
+    function chooseStore(store){
+
+        var badPrices = 0;
+        var nmcls_count = 0;
+        // console.log(store)
+        dbProducts.map(i => {
+            var spt = store.price_types.find(spts => spts.organization_id == i.organization_id);
+            var real_price = 0;
+            if (spt){
+                if (i.price){
+                    var pf = i.price.find(p => p.price_type_guid == spt.guid);
+                    if (pf)
+                        real_price = pf.price;
+                }
+            }
+            i.real_price = real_price;
+            if (i.real_price == 0)
+                badPrices++;
+            nmcls_count++;
+        })
+
+        products.map(i => {
+            i.price = dbProducts.find(p => i.nomenclature_id == p.id).real_price
+        })
+        if (store.blockedSups){
+            moddedCategories.map(mc => {
+                if (store.blockedSups.find(bs => bs.id == mc.id))
+                    return mc.blocked = 1;
+                else
+                    return delete mc.blocked;
+            })
+        }
+        else
+            moddedCategories.map(mc => {
+                delete mc.blocked;
+            })
+        setReadyClient(store);
+        setClientPickerVisible(false);
+        setRefSum(!refSum);
+    }
+    function chooseType(type){
+        setChosenType(type);
+        setTypePickerVisible(false);
+    }
+
+    function alrdy(id, value, qty){
+        const indexProduct = dbProducts.findIndex(i => i.id == id);
+        dbProducts[indexProduct].already = value;
+        const product = dbProducts.find(i => i.id == id);
+        const indexCat = categories.findIndex(i => i.id == product.category_id);
+        categories[indexCat].already = value;
+        if (qty)
+            dbProducts[indexProduct].pickedQty = qty;
+        else
+            delete dbProducts[indexProduct].pickedQty
+    }
+
+     async function sendRequest(){
+
+        if (readyClient.id || client_id && products.length || list){
+            if (products){
+                setLoading(true);
+
+                products.map(i => {
+                    i.return_type = chosenType.guid;
+                });
+                const db = await getDBConnection();
+
+                let reqUnsync = {
+                    "client_id": readyClient.client_id,
+                    "client_guid": readyClient.client_guid,
+                    "client_name": readyClient.client_name,
+                    "store_id": readyClient.id,
+                    "store_guid": readyClient.guid,
+                    "store_name": readyClient.name,
+                    "amount": totalSum,
+                    "doc_type": docType, // 0 или 1, 0 - cash, 1 - invoice
+                    "exported": 0, // 0 или 1
+                    "list": products,
+                    "comment": comment,
+                    "doc_number": docNumber,
+                    "return_name": chosenType.name,
+
+                }
+
+                reqUnsync.list = JSON.stringify(reqUnsync.list);
+                reqUnsync.list = reqUnsync.list.replace(/[']+/g, "''");
+                console.log('editReturnScreen reqUnsync', reqUnsync)
+                try {
+                    setLoading(true);
+                    await updateReturn(db, 'unsyncReturns',reqUnsync, id )
+                } catch (e) {
+                    console.log(e)
+                } finally {
+                    setLoading(false);
+                    Toast.show('Возврат успешно исправлен');
+                    navigation.replace('ReturnScreen');
+                }
+
+
+            }
+        }
+        else
+            Toast.show('Не выбраны клиент,товары или причина');
+    }
+
 
     return(
         <View style={{height: '100%'}}>
@@ -450,6 +425,7 @@ export const NewReturnScreen = ({navigation}) => {
                                 >
                                     <DefaultCheckBoxWithText
                                         text={consts.TYPE_OF_DOCUMENT}
+                                        checked={doc_type}
                                         onChange={(value) => {
                                             if (value)
                                                 setDocType(1)

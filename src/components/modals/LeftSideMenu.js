@@ -15,12 +15,16 @@ import {Loading} from "./Loading";
 import loginHandler from "../../utils/login";
 import {Auth} from "../../API/auth";
 import Toast from "react-native-simple-toast";
+import {SureModal} from "./SureModal";
 
 export const LeftSideMenu = ({visible, opener, navigation}) => {
 
     const {refresher, setRefresher} = useContext(RefresherContext);
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(false);
+    const [sureModal, setSureModal] = useState(false);
+    const [sureModalText, setSureModalText] = useState('');
+    const [sureModalValue, setSureModalValue] = useState('');
 
     const navig = useNavigation();
     //navig.navigate('RequestScreen')
@@ -73,33 +77,51 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
         }
     }
     const send = async() => {
-        if (SyncOrders())
-            setRefresher(!refresher)
-        if (SyncReturns())
-            setRefresher(!refresher)
-        if (SyncPKO())
-            setRefresher(!refresher)
-        const db = await getDBConnection();
-        const token = await AsyncStorage.getItem('@token');
-        let orders = await getAllItems(db, 'requests');
-        // console.log('orders', orders)
-       const unsyncOrders = orders.filter(order=>order.sync_status === 0)
+        try {
+            setLoading(true)
 
-        if(unsyncOrders) {
-            await unsyncOrders.map((i) => {
-                i.list = JSON.parse(i.list)
-            })
-            for(let i=0; i < unsyncOrders.length; i++ ) {
-                const value = unsyncOrders[i];
-
-                const data = {order_id: value.id}
-                await SendUnsyncRequest(token, data)
+            if (await SyncOrders()) {
+                setRefresher(!refresher)
             }
 
+            if (await SyncReturns()) {
+                setRefresher(!refresher)
+            }
 
+            if (await SyncPKO()){
+                setRefresher(!refresher)
+            }
+
+            const db = await getDBConnection();
+            const token = await AsyncStorage.getItem('@token');
+            let orders = await getAllItems(db, 'requests');
+            // console.log('orders', orders)
+            const unsyncOrders = orders.filter(order=>order.sync_status === 0)
+
+            if(unsyncOrders) {
+                await unsyncOrders.map((i) => {
+                    i.list = JSON.parse(i.list)
+                })
+                for(let i=0; i < unsyncOrders.length; i++ ) {
+                    const value = unsyncOrders[i];
+
+                    const data = {order_id: value.id}
+                    await SendUnsyncRequest(token, data)
+                }
+
+
+            }
+        } catch (e) {
+            console.log(e)
+        }finally {
+            setLoading(false)
+            Toast.show('Заявки отправлены');
+            doNavigation('Home')
+
+            // closer()
         }
-        Toast.show('Заявки отправлены');
-        closer()
+
+
     }
 
     const onShow = async () => {
@@ -118,6 +140,59 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
         }
     }
 
+    function sureModalVis(value, type){
+        if (type){
+            setSureModalValue(type);
+            switch (type){
+                case 'send':
+                    setSureModalText('Вы уверены, что хотите отправить?');
+                    break;
+                case 'logout':
+                    setSureModalText('Вы уверены, что хотите отправить?');
+                    break;
+                case 'update':
+                    setSureModalText('Вы уверены, что хотите обновить?');
+                    break;
+            }
+        }
+        setSureModal(value);
+    }
+
+    function sureModalPicked(){
+        // console.log(sureModalValue)
+        switch (sureModalValue){
+            case 'send':
+                send();
+                break;
+            case 'logout':
+                logOut();
+                break;
+            case 'update':
+                updateHandler()
+                break;
+        }
+    }
+    const onExit = ()=>{
+        setSureModalValue('logout');
+        setSureModal(true);
+        setSureModalText('Вы уверены, что хотите выйти?');
+    }
+    const onSend = ()=>{
+        setSureModalValue('send');
+        setSureModal(true);
+        setSureModalText('Вы уверены, что хотите отправить?');
+    }
+    const onUpdate = ()=>{
+        setSureModalValue('update');
+        setSureModal(true);
+        setSureModalText('Вы уверены, что хотите обновить?');
+    }
+    const logOut = async()=> {
+        await AsyncStorage.removeItem('@login');
+        await AsyncStorage.removeItem('@pass');
+        await AsyncStorage.removeItem('@token');
+        doNavigation('Login');
+    }
     return(
         <Modal
             onShow={onShow}
@@ -176,34 +251,37 @@ export const LeftSideMenu = ({visible, opener, navigation}) => {
 
 
                             <TouchableOpacity
-                                onPress={() => updateHandler()}
+                                onPress={() => onUpdate()}
                                 style={style.liBtn}
                             >
                                 <Text style={style.liText}>Обновление</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                onPress={() => send()}
+                                onPress={() => onSend()}
                                 style={style.liBtn}
                             >
                                 <Text style={style.liText}>Отправить</Text>
                             </TouchableOpacity>
-                            {/*<TouchableOpacity*/}
-                            {/*    style={style.liBtn}*/}
-                            {/*>*/}
-                            {/*    <Text style={style.liText}>{consts.OPTIONS}</Text>*/}
-                            {/*</TouchableOpacity>*/}
                             <TouchableOpacity
-                                onPress={async () => {
-                                    await AsyncStorage.removeItem('@login');
-                                    await AsyncStorage.removeItem('@pass');
-                                    await AsyncStorage.removeItem('@token');
-                                    doNavigation('Login');
-                                }}
+                                style={style.liBtn}
+                                onPress={() => doNavigation('CleanScreen')}
+                            >
+                                <Text style={style.liText}>Очистить историю</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={()=>onExit()}
+
                                 style={style.liBtn}
                             >
                                 <Text style={style.liText}>{consts.LOGOUT}</Text>
                             </TouchableOpacity>
                         </View>
+                        <SureModal
+                            visible={sureModal}
+                            setVisible={sureModalVis}
+                            callback={sureModalPicked}
+                            text={sureModalText}
+                        />
                         <Loading visible={loading} text='Синхронизация'/>
                     </View>
                 </View>

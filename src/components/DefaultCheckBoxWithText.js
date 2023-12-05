@@ -10,7 +10,11 @@ import BouncyCheckbox from "react-native-bouncy-checkbox";
 export const DefaultCheckBoxWithText= ({text, onChange, checked}) => {
     const [checkboxState, setCheckboxState] = React.useState(checked);
 
-
+useEffect(()=>{
+    if(checkboxState){
+        onChange(1)
+    } else onChange(0)
+},[checkboxState])
 
     function change(value){
         if (onChange )
@@ -34,8 +38,8 @@ export const DefaultCheckBoxWithText= ({text, onChange, checked}) => {
                 text="Custom Checkbox"
                 iconStyle={{ borderColor: "#ff6365"}}
                 textStyle={{ fontFamily: "JosefinSans-Regular" }}
-                onPress={(checked) => change(checked)}
-                // onPress={() => setCheckboxState(!checkboxState)}
+                // onPress={(checked) => change(checked)}
+                onPress={() => setCheckboxState(!checkboxState)}
                 disableText={true}
                 isChecked={checkboxState}
             />

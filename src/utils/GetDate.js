@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 
 export const GetDate = (day) => {
 
@@ -6,12 +5,12 @@ export const GetDate = (day) => {
     var month = new Date().getMonth() + 1;
     var year = new Date().getFullYear(); */
 
-    if (day == 'today'){
-        var fulldate = (new Date());
+    if (day === 'today'){
+        const fulldate = (new Date());
         return fulldate.toLocaleDateString("en-US");
     }
-    if (day == 'tomorrow'){
-        var fulldate = (new Date());
+    if (day === 'tomorrow'){
+        const fulldate = (new Date());
         fulldate.setDate(fulldate.getDate() + 1)
         return fulldate.toLocaleDateString("en-US");
     }

@@ -32,10 +32,12 @@ export const consts = {
 
 export const url = {
     // DEV: 'https://manager1c.garm.run',
-    DEV: 'http://127.0.0.1:8000',
+    DEV: 'https://agg.eugenluchianov97.com',
+    // DEV: 'http://37.233.13.36:7735/Exchange/hs/NewApi',
+    // DEV: 'http://10.100.107.7:7735/Exchange/hs',
     PROD: 'https://agent.agg.md'
 }
 
-export const currentUrl = url.PROD;   //change version here !!!!!!!!!!!!!!!!!!!!!!!
+export const currentUrl = url.DEV;   //change version here !!!!!!!!!!!!!!!!!!!!!!!
 
-export const ver = currentUrl == url.DEV ? 'dev' : 'prod';
+export const ver = currentUrl === url.DEV ? 'dev' : 'prod';
